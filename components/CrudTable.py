@@ -2,14 +2,10 @@ import streamlit as st
 from db import *
 import pandas as pd
 
-MODAL_MAP = {"Period": Period, "Pop": Pop, "Party": Party}
-
 
 class CrudTable:
     def __init__(self, model):
-        self.model = MODAL_MAP[
-            model
-        ]  # will be needed to address the models crud methods
+        self.model = model  # will be needed to address the models crud methods
         self.key = f"{self.model.__name__}_crud_table"  # is needed to get the changed data from the session state
 
         # i want changes to be processed only after submitting, but need to show an indicator beforehand

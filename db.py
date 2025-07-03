@@ -37,11 +37,11 @@ def create_demo_data():
 
         # Parties
         party_data = [
-            {"short_name": "CON", "full_name": "Conservative Party"},
-            {"short_name": "LIB", "full_name": "Liberals"},
-            {"short_name": "SDP", "full_name": "Socialist Democratic Party"},
-            {"short_name": "COM", "full_name": "Communist Party"},
-            {"short_name": "RWI", "full_name": "The Right Wing"},
+            {"name": "CON", "full_name": "Conservative Party"},
+            {"name": "LIB", "full_name": "Liberals"},
+            {"name": "SDP", "full_name": "Socialist Democratic Party"},
+            {"name": "COM", "full_name": "Communist Party"},
+            {"name": "RWI", "full_name": "The Right Wing"},
         ]
         for party in party_data:
             new_party = Party(**party)
@@ -52,15 +52,36 @@ def create_demo_data():
 ###########################################################################
 # CRUD Operations
 # READ - General
-def get_entries(model, filters=None):
+def get_entries(model, filters=None, sort_by=None, descending=False):
     with Session(engine) as session:
         query = select(model)
         if filters:
             for key, value in filters.items():
+                if "id" in key:
+                    value = int(value)
                 query = query.where(getattr(model, key) == value)
+        if sort_by:
+            column = getattr(model, sort_by)
+            if descending:
+                query = query.order_by(desc(column))
+            else:
+                query = query.order_by(column)
         data = session.exec(query).all()
-        result = [data.dict() for data in data]
+        result = [item.model_dump() for item in data]
         return result
+
+
+# READ - Previous Periods
+def get_previous_period(current_period_dict):
+    with Session(engine) as session:
+        query = (
+            select(Period)
+            .where(Period.year < current_period_dict["year"])
+            .order_by(desc(Period.year))
+            .limit(1)
+        )
+        result = session.exec(query).first()
+        return result.model_dump() if result else None
 
 
 # Create
@@ -76,6 +97,7 @@ def create_new_entry(model, data):
 # Update
 def update_entry(model, entry_id, data):
     entry_id = int(entry_id)  # id from pd.dataframe is a numpy int, we need an int
+    # print(f"Updating entry in {model.__name__} with ID {entry_id} and data {data}")
     with Session(engine) as session:
         entry = session.exec(select(model).where(model.id == entry_id)).first()
         if entry:
