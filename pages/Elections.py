@@ -6,9 +6,10 @@ from components.Selections import SelectionPeriod
 from models import *
 from db import *
 from simulation import *
-from components.GraphElectionResult import GraphElectionResult
 from components.GraphSeating import GraphSeating
 from components.Coalitions import Coalitions
+from components.GraphElection import GraphElection
+from dataframes import *
 
 
 #########################################################################
@@ -27,9 +28,12 @@ st.caption("Create an election simulation")
 # Select Period
 periodSelection = SelectionPeriod()
 selected_period = periodSelection.selected_period
-if not selected_period:
-    st.warning("Please select a period to continue.")
-    st.stop()
+
+# Check if election data already exists
+election_data_exists = (
+    get_entries(ElectionResult, filters={"period_id": selected_period["id"]}) != []
+)
+
 
 #######################################################################
 # Create or update election
@@ -69,10 +73,19 @@ with st.container(border=True):
     )
 
 ########################################################################
+if not election_data_exists:
+    st.warning(
+        "No election data found for this period. Please create election data first."
+    )
+    st.stop()
+########################################################################
 # Display Election Results
 Divider("Election Results")
-graph_election_result = GraphElectionResult(
-    selected_period["id"],
+election_results = df_election_results(selected_period["id"])
+st.write(election_results)
+GraphElection(
+    election_results,
+    f"Election Results for {selected_period['year']}",
     st.session_state.get("threshold", 5),
 )
 

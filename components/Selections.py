@@ -25,9 +25,13 @@ class SelectionPeriod:
         else:
             self.previous_period = None
 
+        if not self.selected_period:
+            st.warning("Please select a period to continue.")
+            st.stop()
+
 
 class SelectionGroup:
-    def __init__(self):
+    def __init__(self, preselect_model=None):
         # Output Variables
         self.model = None
         self.reference = None
@@ -43,17 +47,22 @@ class SelectionGroup:
 
         # Select Data Type
         selection_items = [
-            {"label": "Population Development", "model": PopPeriod, "reference": Pop},
-            {"label": "Party Development", "model": PartyPeriod, "reference": Party},
+            {"label": "Population Groups", "model": PopPeriod, "reference": Pop},
+            {"label": "Parties", "model": PartyPeriod, "reference": Party},
         ]
+        if not preselect_model:
+            self.selection = st.segmented_control(
+                "Select Data Type",
+                selection_items,
+                format_func=lambda x: x["label"],
+                key="data_type_selection",
+                selection_mode="single",
+            )
+        else:
+            self.selection = next(
+                item for item in selection_items if item["model"] == preselect_model
+            )
 
-        self.selection = st.segmented_control(
-            "Select Data Type",
-            selection_items,
-            format_func=lambda x: x["label"],
-            key="data_type_selection",
-            selection_mode="single",
-        )
         if not self.selection:
             st.warning("Please select a data type to manage.")
             st.stop()
@@ -78,7 +87,7 @@ class SelectionGroup:
         )
         ########################################################################
         # Check if a selection was made
-        Divider(title="Data Entry Section")
+        Divider(title="")
         if not self.period or not self.object:
             st.warning("Please select a period and a reference object to view data.")
             st.stop()

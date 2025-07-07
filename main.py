@@ -14,6 +14,7 @@ pages = {
     ],
     "Simulation": [
         st.Page("pages/Elections.py", title="Elections"),
+        st.Page("pages/VotingStatistics.py", title="Voting Statistics"),
     ],
 }
 

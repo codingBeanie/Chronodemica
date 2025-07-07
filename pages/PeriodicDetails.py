@@ -82,26 +82,23 @@ else:
 #####################################################################
 # Creation Options when no data is available
 if not data or data == []:
-    cols = st.columns(5)
-    with cols[1]:
-        st.button(
-            "Create with Defaults",
-            on_click=create_with_defaults,
-            args=(
-                selections.model,
-                selections.period["id"],
-                selections.object["id"],
-            ),
-            key="create_with_defaults",
-        )
+    st.button(
+        "Create with Defaults",
+        on_click=create_with_defaults,
+        args=(
+            selections.model,
+            selections.period["id"],
+            selections.object["id"],
+        ),
+        key="create_with_defaults",
+    )
     if previous_data:
-        with cols[3]:
-            st.button(
-                "Create from Previous Period",
-                on_click=create_new_entry,
-                args=(selections.model, data_template_with_previous),
-                key="create_from_previous",
-            )
+        st.button(
+            "Create from Previous Period",
+            on_click=create_new_entry,
+            args=(selections.model, data_template_with_previous),
+            key="create_from_previous",
+        )
 
 ######################################################################
 # General Data Display
