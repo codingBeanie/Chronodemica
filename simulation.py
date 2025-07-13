@@ -56,7 +56,12 @@ def calculate_score(pop_period, distance):
 def calculate_adjusted_score(party_period, score):
     # extract parameters
     strength = party_period["political_strength"]
-    adjusted_score = int(score * (1 + (strength / 100)))
+    # New Method: Linear function with negative score adjustment below 50
+    strenght_modifier = np.interp(strength, [0, 100], [0.05, 1.5])
+    adjusted_score = int(score * strenght_modifier)
+
+    # Old Method of just creating a stronger score
+    # adjusted_score = int(score * (1 + (strength / 100)))
     return adjusted_score
 
 

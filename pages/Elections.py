@@ -1,14 +1,15 @@
 import streamlit as st
-from components.GraphPoliticalCompass import PoliticalCompass
-from components.GraphPopulationDistribution import GraphPopulationDistribution
+from plots.GraphPoliticalCompass import PoliticalCompass
+from plots.GraphPopulationDistribution import GraphPopulationDistribution
 from components.Widgets import Divider
 from components.Selections import SelectionPeriod
 from models import *
 from db import *
 from simulation import *
-from components.GraphSeating import GraphSeating
-from components.Coalitions import Coalitions
-from components.GraphElection import GraphElection
+from plots.GraphSeating import GraphSeating
+from components.Coalitions import coalitions
+from plots.GraphElection import GraphElection
+from plots.GraphHorizontalStackedBar import GraphHorizontalStackedBar
 from dataframes import *
 
 
@@ -81,8 +82,7 @@ if not election_data_exists:
 ########################################################################
 # Display Election Results
 Divider("Election Results")
-election_results = df_election_results(selected_period["id"])
-st.write(election_results)
+election_results = df_election_results(selected_period["id"], misc_threshold=3.0)
 GraphElection(
     election_results,
     f"Election Results for {selected_period['year']}",
@@ -93,6 +93,7 @@ Divider("Seating Chart")
 graph_seating = GraphSeating(selected_period["id"], st.session_state.get("rows", 5))
 
 Divider("Government & Coalitions")
-coalitions = Coalitions(selected_period["id"])
+coalitions = coalitions(selected_period["id"])
+
 
 ########################################################################

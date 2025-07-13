@@ -31,7 +31,7 @@ class SelectionPeriod:
 
 
 class SelectionGroup:
-    def __init__(self, preselect_model=None):
+    def __init__(self, preselect_model=None, show_object_selection=True):
         # Output Variables
         self.model = None
         self.reference = None
@@ -47,8 +47,8 @@ class SelectionGroup:
 
         # Select Data Type
         selection_items = [
-            {"label": "Population Groups", "model": PopPeriod, "reference": Pop},
             {"label": "Parties", "model": PartyPeriod, "reference": Party},
+            {"label": "Population Groups", "model": PopPeriod, "reference": Pop},
         ]
         if not preselect_model:
             self.selection = st.segmented_control(
@@ -72,22 +72,30 @@ class SelectionGroup:
 
         #######################################################################
         # Select Object of Data Type
-        model_objects = get_entries(self.reference, sort_by="name", descending=False)
-        if not model_objects:
-            st.warning(
-                f"No {self.reference.__name__.lower()}s available. Please create one first."
+        if show_object_selection:
+            model_objects = get_entries(
+                self.reference, sort_by="name", descending=False
             )
-            st.stop()
+            if not model_objects:
+                st.warning(
+                    f"No {self.reference.__name__.lower()}s available. Please create one first."
+                )
+                st.stop()
 
-        self.object = st.segmented_control(
-            f"Select {self.reference.__name__}",
-            model_objects,
-            format_func=lambda x: x["name"],
-            key="ref_selection",
-        )
+            self.object = st.segmented_control(
+                f"Select {self.reference.__name__}",
+                model_objects,
+                format_func=lambda x: x["name"],
+                key="ref_selection",
+            )
         ########################################################################
         # Check if a selection was made
         Divider(title="")
-        if not self.period or not self.object:
-            st.warning("Please select a period and a reference object to view data.")
+        if not self.period:
+            st.warning("Please select a period view data.")
+            st.stop()
+        if not self.object and show_object_selection:
+            st.warning(
+                f"Please select a {self.reference.__name__.lower()} to continue."
+            )
             st.stop()

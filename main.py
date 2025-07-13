@@ -7,16 +7,12 @@ init_db()
 st.set_page_config(page_title="Chronodemica", page_icon="logo.png", layout="wide")
 
 ###########################################################################
-pages = {
-    "Data Entry": [
-        st.Page("pages/FundamentalData.py", title="Fundamental Data"),
-        st.Page("pages/PeriodicDetails.py", title="Periodic Details"),
-    ],
-    "Simulation": [
-        st.Page("pages/Elections.py", title="Elections"),
-        st.Page("pages/VotingStatistics.py", title="Voting Statistics"),
-    ],
-}
+pages = [
+    st.Page("pages/FundamentalData.py", title="Fundamental Data"),
+    st.Page("pages/PeriodicDetails.py", title="Periodic Details"),
+    st.Page("pages/Elections.py", title="Elections"),
+    st.Page("pages/Timeline.py", title="Timeline Statistics"),
+]
 
 navigation = st.navigation(pages)
 navigation.run()

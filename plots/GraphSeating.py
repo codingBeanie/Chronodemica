@@ -143,9 +143,9 @@ class GraphSeating:
             with st.container(border=True):
                 sm_col = st.columns([1, 1, 4, 1])
                 if row["in_government"]:
-                    sm_col[0].badge("Government", icon="🏛️")
+                    sm_col[0].badge("", icon="🏛️", color="green")
                 else:
-                    sm_col[0].badge("Opposition", icon="🧑‍🧑‍🧒‍🧒")
+                    sm_col[0].badge("", icon="🧑‍🧑‍🧒‍🧒", color="gray")
                 sm_col[1].write(f"**{row['name']}** ")
                 sm_col[2].write(f"{row['full_name']}")
                 sm_col[3].write(f"**{row['seats']}**")
