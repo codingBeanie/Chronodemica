@@ -9,8 +9,9 @@ from simulation import *
 from plots.GraphSeating import GraphSeating
 from components.Coalitions import coalitions
 from plots.GraphElection import GraphElection
-from plots.GraphHorizontalStackedBar import GraphHorizontalStackedBar
+from plots.GraphStackedBarH import graph_stacked_bar_h
 from dataframes import *
+from components.PopVotingBehavior import pop_voting_behavior
 
 
 #########################################################################
@@ -95,5 +96,7 @@ graph_seating = GraphSeating(selected_period["id"], st.session_state.get("rows",
 Divider("Government & Coalitions")
 coalitions = coalitions(selected_period["id"])
 
+Divider("Population Group Voting")
+pop_voting_behavior = pop_voting_behavior(selected_period["id"])
 
 ########################################################################

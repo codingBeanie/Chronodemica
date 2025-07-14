@@ -5,7 +5,7 @@ from simulation import *
 import pandas as pd
 import itertools
 from dataframes import *
-from plots.GraphHorizontalStackedBar import GraphHorizontalStackedBar
+from plots.GraphCoalitionBar import GraphCoalitionBar
 
 
 def coalitions(period_id):
@@ -43,7 +43,7 @@ def coalitions(period_id):
 
             # coalition graph
             with cols[2]:
-                GraphHorizontalStackedBar(coalition_data)
+                GraphCoalitionBar(coalition_data)
 
 
 def create_government_coalition(period_id, party_ids):

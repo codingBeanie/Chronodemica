@@ -36,10 +36,10 @@ def df_election_results(period_id, misc_threshold=0):
     return dataframe
 
 
-def df_pop_votes(period_id, pop_id):
+def df_pop_votes(period_id):
     pop_votes = get_entries(
         PopVote,
-        filters={"period_id": period_id, "pop_id": pop_id},
+        filters={"period_id": period_id},
     )
     dataframe = pd.DataFrame(pop_votes)
 
@@ -47,21 +47,11 @@ def df_pop_votes(period_id, pop_id):
     dataframe = enrich_df_pop_data(dataframe)
     dataframe = enrich_df_party_data(dataframe)
     dataframe = enrich_df_period_data(dataframe)
-    dataframe = enrich_df_previous_data(
-        dataframe=dataframe,
-        model=PopVote,
-        searchColumns=["party_id", "pop_id"],
-        period_id=period_id,
-        valueColumns=["votes"],
-    )
-    dataframe = enrich_df_percentages(dataframe, "votes")
-    dataframe = enrich_df_percentages(dataframe, "previous_votes")
-    dataframe = enrich_df_change_percentage(dataframe)
+    dataframe = enrich_df_percentages(dataframe, "votes", group_column="pop_name")
 
     dataframe = dataframe.sort_values(
         by=["votes", "party_name"], ascending=[False, True]
     )
-
     return dataframe
 
 
@@ -221,7 +211,7 @@ def enrich_df_period_data(dataframe):
     return dataframe
 
 
-def enrich_df_percentages(dataframe, column):
+def enrich_df_percentages(dataframe, column, group_column=None):
     if column not in dataframe.columns:
         return dataframe
     # Calculate the percentage of the specified column
@@ -230,6 +220,27 @@ def enrich_df_percentages(dataframe, column):
         dataframe[f"{column}_percentage"] = (dataframe[column] / total * 100).round(2)
     else:
         dataframe[f"{column}_percentage"] = None
+
+    # If filter_column is specified, calculate the percentage for specific columns and conditions
+    if group_column:
+        # get all values for the group_column
+        group_values = dataframe[group_column].unique()
+        for value in group_values:
+            # filter the dataframe for the current value
+            filtered_df = dataframe[dataframe[group_column] == value]
+            # calculate the total for the filtered dataframe
+            filtered_total = filtered_df[column].sum()
+            if filtered_total > 0:
+                # calculate the percentage for the filtered dataframe
+                dataframe.loc[
+                    dataframe[group_column] == value,
+                    f"{column}_{group_column}_percentage",
+                ] = (filtered_df[column] / filtered_total * 100).round(2)
+            else:
+                dataframe.loc[
+                    dataframe[group_column] == value,
+                    f"{column}_{group_column}_percentage",
+                ] = None
 
     return dataframe
 

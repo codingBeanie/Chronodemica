@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from dataframes import *
 
 
-def GraphHorizontalStackedBar(dataframe):
+def GraphCoalitionBar(dataframe):
     graph = go.Figure()
     # Get unique parties
     for party in dataframe["party_name"].unique():
