@@ -4,8 +4,11 @@ In den .svelte Dateien soll möglichst kein CSS Code stehen müssen, da alles ü
 Wiederverwende möglichst oft bereits exsitierende Komponenten, solange es keine große Änderung in der Komponente geben muss. Erstelle also so wenige Buttons und andere UI-Elemente wie nötig, damit es einen einheitlichen Look&Feel gibt.
 Komponenten können verschachtelt sein. In einer Card-Komponente kann also die Button-Komponente verwedendet werden. Dafür ist keine neue Button-Komponente zu erzeugen. Sollte sich jedoch das Design unterscheiden (z.B. Farbe) ist dies über Props für die einzelnen Komponenten zu lösen.
 
+# Konventionen
+Svelte 5 patterns sind zu nutzen
+
 # Pages
-Sammle hier alle .svelte Dateien, die Pages oder Layouts sind.
+Sammle hier alle .svelte Dateien, die Pages oder Layouts sind. Auf den Pages selbst soll möglichst wenig UI-Elemente im Detail beschrieben werden. Hierfür sollen primär Komponenten gewählt werden.
 
 # Styling
 Nutze tailwind-css um alle Komponenten zu stylen.

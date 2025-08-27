@@ -1,13 +1,18 @@
+import os
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, create_engine
+from dotenv import load_dotenv
 from models import (
     Period, Pop, PopPeriod, Party, PartyPeriod, 
     PopVote, ElectionResult
 )
 import crud
 
-DATABASE_URL = "sqlite:///./chronodemica.db"
+# Load environment variables
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chronodemica.db")
 engine = create_engine(DATABASE_URL, echo=True)
 
 def get_session():
