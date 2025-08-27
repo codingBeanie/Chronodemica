@@ -1,8 +1,8 @@
 <script lang="ts">
 	import ContentHeader from '../../components/ui/ContentHeader.svelte';
 	import SegmentedControl from '../../components/ui/SegmentedControl.svelte';
-	import Table from '../../components/ui/Table.svelte';
-	
+	import CrudTable from '../../components/ui/CrudTable.svelte';
+
 	// Configuration hashmap for the segmented control options
 	const dataTypeOptions = {
 		'Population': 'Pop',
@@ -25,5 +25,5 @@
 		bind:selectedValue={selectedDataType}
 	/>
 	
-	<Table model={selectedDataType} />
+	<CrudTable model={selectedDataType} />
 </div>

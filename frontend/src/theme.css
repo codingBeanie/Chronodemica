@@ -34,54 +34,89 @@
   .bg-primary-100 { background-color: var(--primary-100); }
   .bg-primary-200 { background-color: var(--primary-200); }
   .bg-primary-300 { background-color: var(--primary-300); }
+  .hover\:bg-primary-100:hover { background-color: var(--primary-100); }
+  .hover\:bg-primary-200:hover { background-color: var(--primary-200); }
+  .hover\:bg-primary-300:hover { background-color: var(--primary-300); }
   .text-primary-100 { color: var(--primary-100); }
   .text-primary-200 { color: var(--primary-200); }
   .text-primary-300 { color: var(--primary-300); }
   .border-primary-100 { border-color: var(--primary-100); }
   .border-primary-200 { border-color: var(--primary-200); }
   .border-primary-300 { border-color: var(--primary-300); }
+  .hover\:border-primary-100:hover { border-color: var(--primary-100); }
+  .hover\:border-primary-200:hover { border-color: var(--primary-200); }
+  .hover\:border-primary-300:hover { border-color: var(--primary-300); }
   
   /* Secondary */
+  .bg-secondary-50 { background-color: var(--secondary-50); }
   .bg-secondary-100 { background-color: var(--secondary-100); }
   .bg-secondary-200 { background-color: var(--secondary-200); }
   .bg-secondary-300 { background-color: var(--secondary-300); }
+  .hover\:bg-secondary-50:hover { background-color: var(--secondary-50); }
+  .hover\:bg-secondary-100:hover { background-color: var(--secondary-100); }
+  .hover\:bg-secondary-200:hover { background-color: var(--secondary-200); }
+  .hover\:bg-secondary-300:hover { background-color: var(--secondary-300); }
+  .text-secondary-50 { color: var(--secondary-50); }
   .text-secondary-100 { color: var(--secondary-100); }
   .text-secondary-200 { color: var(--secondary-200); }
   .text-secondary-300 { color: var(--secondary-300); }
+  .border-secondary-50 { border-color: var(--secondary-50); }
   .border-secondary-100 { border-color: var(--secondary-100); }
   .border-secondary-200 { border-color: var(--secondary-200); }
   .border-secondary-300 { border-color: var(--secondary-300); }
+  .hover\:border-secondary-50:hover { border-color: var(--secondary-50); }
+  .hover\:border-secondary-100:hover { border-color: var(--secondary-100); }
+  .hover\:border-secondary-200:hover { border-color: var(--secondary-200); }
+  .hover\:border-secondary-300:hover { border-color: var(--secondary-300); }
   
   /* Accent */
   .bg-accent-100 { background-color: var(--accent-100); }
   .bg-accent-200 { background-color: var(--accent-200); }
   .bg-accent-300 { background-color: var(--accent-300); }
+  .hover\:bg-accent-100:hover { background-color: var(--accent-100); }
+  .hover\:bg-accent-200:hover { background-color: var(--accent-200); }
+  .hover\:bg-accent-300:hover { background-color: var(--accent-300); }
   .text-accent-100 { color: var(--accent-100); }
   .text-accent-200 { color: var(--accent-200); }
   .text-accent-300 { color: var(--accent-300); }
   .border-accent-100 { border-color: var(--accent-100); }
   .border-accent-200 { border-color: var(--accent-200); }
   .border-accent-300 { border-color: var(--accent-300); }
+  .hover\:border-accent-100:hover { border-color: var(--accent-100); }
+  .hover\:border-accent-200:hover { border-color: var(--accent-200); }
+  .hover\:border-accent-300:hover { border-color: var(--accent-300); }
   
   /* Success */
   .bg-success-100 { background-color: var(--success-100); }
   .bg-success-200 { background-color: var(--success-200); }
   .bg-success-300 { background-color: var(--success-300); }
+  .hover\:bg-success-100:hover { background-color: var(--success-100); }
+  .hover\:bg-success-200:hover { background-color: var(--success-200); }
+  .hover\:bg-success-300:hover { background-color: var(--success-300); }
   .text-success-100 { color: var(--success-100); }
   .text-success-200 { color: var(--success-200); }
   .text-success-300 { color: var(--success-300); }
   .border-success-100 { border-color: var(--success-100); }
   .border-success-200 { border-color: var(--success-200); }
   .border-success-300 { border-color: var(--success-300); }
+  .hover\:border-success-100:hover { border-color: var(--success-100); }
+  .hover\:border-success-200:hover { border-color: var(--success-200); }
+  .hover\:border-success-300:hover { border-color: var(--success-300); }
   
   /* Failure */
   .bg-failure-100 { background-color: var(--failure-100); }
   .bg-failure-200 { background-color: var(--failure-200); }
   .bg-failure-300 { background-color: var(--failure-300); }
+  .hover\:bg-failure-100:hover { background-color: var(--failure-100); }
+  .hover\:bg-failure-200:hover { background-color: var(--failure-200); }
+  .hover\:bg-failure-300:hover { background-color: var(--failure-300); }
   .text-failure-100 { color: var(--failure-100); }
   .text-failure-200 { color: var(--failure-200); }
   .text-failure-300 { color: var(--failure-300); }
   .border-failure-100 { border-color: var(--failure-100); }
   .border-failure-200 { border-color: var(--failure-200); }
   .border-failure-300 { border-color: var(--failure-300); }
+  .hover\:border-failure-100:hover { border-color: var(--failure-100); }
+  .hover\:border-failure-200:hover { border-color: var(--failure-200); }
+  .hover\:border-failure-300:hover { border-color: var(--failure-300); }
 }
