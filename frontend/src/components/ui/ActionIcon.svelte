@@ -17,11 +17,11 @@
 		text-sm 
 		transition-all duration-200 
 		border 
-		bg-secondary-100 
-		border-secondary-200 
-		text-secondary-300
-		hover:bg-accent-100 
-		hover:border-secondary-300
+		bg-light 
+		border-light-text 
+		text-dark-text
+		hover:bg-light 
+		hover:border-dark-text
 		disabled:opacity-50 
 		disabled:cursor-not-allowed
 		enabled:cursor-pointer

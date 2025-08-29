@@ -18,10 +18,14 @@ Nutze das definierte Color-Theme in /theme.css
 
 # Theming
 Biete mir eine zentrale Datei für das Theming an. Folgende Farben werden benötigt:
-* Primary
-* Secondary
-* Accent
-* Success
-* Failure
-Alle Farben können in drei Abstufungen vorhanden sein (-100, -200, -300). 
+* Dark - Dunkle Farbe für Akzente und Überschriften
+* Light - Helle Farbe für Komponenten-Hintergründe
+* Light-bg - Sehr helle Farbe für Seiten-Hintergründe
+* Dark-text - Dunkler Text für gute Lesbarkeit
+* Light-text - Heller Text für sekundäre Informationen
+* Accent - Akzentfarbe für Hervorhebungen
+* Success - Farbe für Erfolgsmeldungen
+* Failure - Farbe für Fehlermeldungen
+
+Alle Farben existieren nur als eine Variante ohne Suffixe (-100, -200, etc.).
 Verwende ausschließlich diese Farb-Klassen für alle Komponenten. 

@@ -16,15 +16,15 @@
 
 <div class="mb-6">
 	{#if label}
-		<h2 class="text-lg font-semibold text-secondary-300 mb-3">{label}</h2>
+		<h2 class="text-lg font-semibold mb-3">{label}</h2>
 	{/if}
-	<div class="flex bg-secondary-100 rounded-lg p-1 gap-1">
+	<div class="flex border border-light-alt rounded-lg p-2 gap-2">
 		{#each Object.entries(options) as [title, value]}
 			<button
-				class="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
+				class="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer
 					{selectedValue === value 
-						? 'bg-primary-200 text-secondary-100 shadow-sm' 
-						: 'text-secondary-300 hover:bg-secondary-50 hover:text-primary-200'
+						? 'bg-dark text-light shadow-sm' 
+						: 'text-dark-text bg-light-alt hover:bg-dark-alt hover:text-light'
 					}"
 				onclick={() => handleSelection(value)}
 			>

@@ -1,63 +1,95 @@
 <script>
+  import ModalData from './ModalData.svelte';
+  
   export let model = '';
   
   let data = [];
   let headers = [];
   let loading = false;
   
+  // CSS Class Configurations - Easy to customize
+  const tableClasses = {
+    wrapper: "w-full",
+    scrollWrapper: "overflow-x-auto",
+    table: "min-w-full",
+    header: {
+      thead: "bg-light",
+      tr: "bg-light-alt",
+      th: "px-4 py-4 text-left text-xs font-medium uppercase tracking-wider first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg"
+    },
+    body: {
+      tbody: "divide-y divide-light-alt",
+      tr: "hover:bg-light-alt transition-colors duration-200 border-b border-light-alt",
+      td: "px-4 py-4 whitespace-nowrap text-sm text-dark-alt first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg"
+    },
+    states: {
+      loading: "text-center py-4 text-dark-alt",
+      noData: "text-center py-4 text-dark-alt"
+    }
+  };
+  
+  async function loadDataStructure() {
+    if (!model) return;
+    
+    try {
+      const response = await fetch(`/api/data-structure/${model.toLowerCase()}`);
+      const structure = await response.json();
+      headers = (structure.columns || []).filter(column => column !== 'id');
+    } catch (error) {
+      console.error('Error loading data structure:', error);
+      headers = [];
+    }
+  }
+
   async function loadData() {
     if (!model) return;
     
     loading = true;
     try {
-      const response = await fetch(`/api/${model.toLowerCase()}s`);
+      const response = await fetch(`/api/${model.toLowerCase()}`);
       const result = await response.json();
-      
-      if (result.length > 0) {
-        data = result;
-        headers = Object.keys(result[0]);
-      } else {
-        data = [];
-        headers = [];
-      }
+      data = result || [];
     } catch (error) {
       console.error('Error loading data:', error);
       data = [];
-      headers = [];
     } finally {
       loading = false;
     }
   }
   
   $: if (model) {
+    loadDataStructure();
     loadData();
   }
 </script>
 
-<div class="w-full">
-  <h2 class="text-xl font-semibold mb-4">{model} Table</h2>
+<div class={tableClasses.wrapper}>
+  <!-- New Entry Button -->
+  <div class="mb-4 flex justify-start">
+    <ModalData datamodel={model} title={`Create new ${model}`} buttonText="New Entry" />
+  </div>
   
   {#if loading}
-    <div class="text-center py-4">Loading...</div>
+    <div class={tableClasses.states.loading}>Loading...</div>
   {:else if data.length === 0}
-    <div class="text-center py-4 text-gray-500">No data available</div>
+    <div class={tableClasses.states.noData}>No data available</div>
   {:else}
-    <div class="overflow-x-auto">
-      <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-        <thead class="bg-gray-50">
-          <tr>
+    <div class={tableClasses.scrollWrapper}>
+      <table class={tableClasses.table}>
+        <thead class={tableClasses.header.thead}>
+          <tr class={tableClasses.header.tr}>
             {#each headers as header}
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+              <th class={tableClasses.header.th}>
                 {header}
               </th>
             {/each}
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200">
+        <tbody class={tableClasses.body.tbody}>
           {#each data as row, index}
-            <tr class="hover:bg-gray-50">
+            <tr class={tableClasses.body.tr}>
               {#each headers as header}
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td class={tableClasses.body.td}>
                   {row[header] ?? '-'}
                 </td>
               {/each}

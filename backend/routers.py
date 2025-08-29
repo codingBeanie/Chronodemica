@@ -243,14 +243,28 @@ def get_data_structure(model_name: str):
         # Clean up the type string for better readability
         field_type = field_type.replace("typing.", "").replace("<class '", "").replace("'>", "")
         
+        # Handle default value safely
+        default_value = None
+        if hasattr(field_info, 'default'):
+            try:
+                # Check if default is PydanticUndefined or similar non-serializable type
+                from pydantic_core import PydanticUndefined
+                if field_info.default is not PydanticUndefined:
+                    default_value = field_info.default
+            except ImportError:
+                # Fallback for older pydantic versions
+                if str(type(field_info.default)) != "<class 'pydantic_core._pydantic_core.PydanticUndefinedType'>":
+                    default_value = field_info.default
+        
         fields[field_name] = {
             "type": field_type,
             "required": field_info.is_required(),
-            "default": field_info.default if hasattr(field_info, 'default') else None
+            "default": default_value
         }
     
     return {
         "model": model_name,
         "table_name": model.__tablename__,
+        "columns": list(fields.keys()),
         "fields": fields
     }

@@ -2,6 +2,9 @@
 	import ContentHeader from '../../components/ui/ContentHeader.svelte';
 	import SegmentedControl from '../../components/ui/SegmentedControl.svelte';
 	import CrudTable from '../../components/ui/CrudTable.svelte';
+	import Container from '../../components/ui/Container.svelte';
+	import Grid from '../../components/ui/Grid.svelte';
+	import Column from '../../components/ui/Column.svelte';
 
 	// Configuration hashmap for the segmented control options
 	const dataTypeOptions = {
@@ -15,15 +18,20 @@
 
 <ContentHeader 
 	title="Data Entry" 
-	caption="Capture and manage your simulation data"
 />
 
-<div class="p-6 space-y-8">
-	<SegmentedControl 
-		label="Select Data Type"
-		options={dataTypeOptions}
-		bind:selectedValue={selectedDataType}
-	/>
-	
-	<CrudTable model={selectedDataType} />
-</div>
+<Grid cols="1fr">
+	<Column>
+		<Container>
+			<div class="space-y-8">
+				<SegmentedControl 
+					label="Select Data Type"
+					options={dataTypeOptions}
+					bind:selectedValue={selectedDataType}
+				/>
+				
+				<CrudTable model={selectedDataType} />
+			</div>
+		</Container>
+	</Column>
+</Grid>
