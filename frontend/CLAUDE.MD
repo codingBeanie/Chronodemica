@@ -1,31 +1,94 @@
-# Components
-Für jede UI-Komponente, die vom HTML-Standard verändert wird, ist eine Komponente unter /src/components/ui anzulegen. Also Button, Slider, Inputs, etc. 
-In den .svelte Dateien soll möglichst kein CSS Code stehen müssen, da alles über Komponenten eingebunden wird.
-Wiederverwende möglichst oft bereits exsitierende Komponenten, solange es keine große Änderung in der Komponente geben muss. Erstelle also so wenige Buttons und andere UI-Elemente wie nötig, damit es einen einheitlichen Look&Feel gibt.
-Komponenten können verschachtelt sein. In einer Card-Komponente kann also die Button-Komponente verwedendet werden. Dafür ist keine neue Button-Komponente zu erzeugen. Sollte sich jedoch das Design unterscheiden (z.B. Farbe) ist dies über Props für die einzelnen Komponenten zu lösen.
+# Frontend Architecture
 
-# Konventionen
-Svelte 5 patterns sind zu nutzen
+## Svelte 5 Requirements
+**MANDATORY:** Use only Svelte 5 syntax and patterns:
+- Use `$state()` for reactive variables instead of `let` declarations
+- Use `$derived()` for computed values instead of reactive statements
+- Use `$effect()` for side effects instead of reactive statements  
+- Use `$props()` for component props instead of `export let`
+- Use event attributes `onclick={}` instead of `on:click={}`
+- Use `$bindable()` for two-way binding props
+- Apply runes-first approach in ALL components
 
-# Pages
-Sammle hier alle .svelte Dateien, die Pages oder Layouts sind. Auf den Pages selbst soll möglichst wenig UI-Elemente im Detail beschrieben werden. Hierfür sollen primär Komponenten gewählt werden.
+## Component Architecture
+- Create UI components in `/src/components/ui/` for any non-standard HTML elements
+- Components: Button, Input, Card, Modal, Slider, etc.
+- **Zero inline CSS** in .svelte files - everything via reusable components
+- **Maximum component reuse** - create minimal variants, extend via props
+- **Nested components allowed** - Card can use Button, no duplicate components needed
+- **Props for variations** - different colors/styles via component properties
 
-# Styling
-Nutze tailwind-css um alle Komponenten zu stylen.
-Nutze ein minimalistisches, aber modernes Design.
-Das Design muss über alle Komponenten einheitlich sein. 
-Nutze das definierte Color-Theme in /theme.css
+## Pages & Layouts
+- Place all page/layout .svelte files in dedicated directories
+- **Minimal UI detail** on pages - compose primarily from components
+- Pages should focus on data flow and component composition
 
-# Theming
-Biete mir eine zentrale Datei für das Theming an. Folgende Farben werden benötigt:
-* Dark - Dunkle Farbe für Akzente und Überschriften
-* Light - Helle Farbe für Komponenten-Hintergründe
-* Light-bg - Sehr helle Farbe für Seiten-Hintergründe
-* Dark-text - Dunkler Text für gute Lesbarkeit
-* Light-text - Heller Text für sekundäre Informationen
-* Accent - Akzentfarbe für Hervorhebungen
-* Success - Farbe für Erfolgsmeldungen
-* Failure - Farbe für Fehlermeldungen
+## Centralized Styling System
 
-Alle Farben existieren nur als eine Variante ohne Suffixe (-100, -200, etc.).
-Verwende ausschließlich diese Farb-Klassen für alle Komponenten. 
+### Design Tokens (Central Configuration)
+Create `/src/styles/design-tokens.js` with:
+```javascript
+export const DESIGN_TOKENS = {
+  // Colors
+  colors: {
+    dark: '#1a1a1a',
+    light: '#f8f9fa', 
+    lightBg: '#ffffff',
+    darkText: '#2d3748',
+    lightText: '#718096',
+    accent: '#3182ce',
+    success: '#38a169',
+    failure: '#e53e3e'
+  },
+  
+  // Spacing
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    xl: '2rem'
+  },
+  
+  // Typography
+  fontSize: {
+    sm: '0.875rem',
+    base: '1rem', 
+    lg: '1.125rem',
+    xl: '1.25rem',
+    '2xl': '1.5rem'
+  },
+  
+  // Borders & Radius
+  borderRadius: {
+    sm: '0.25rem',
+    md: '0.375rem',
+    lg: '0.5rem'
+  }
+};
+```
+
+### Tailwind Theme Integration
+- Use design tokens in `tailwind.config.js`
+- **Only custom color classes** - no -100, -200 suffixes
+- All components MUST use centralized theme classes
+- Easy global theme changes via single config file
+
+### Component Style Classes
+Create `/src/styles/component-classes.js` for reusable class combinations:
+```javascript
+export const COMPONENT_STYLES = {
+  button: {
+    primary: 'bg-accent text-white hover:opacity-90 px-4 py-2 rounded-md',
+    secondary: 'bg-light text-dark-text border border-gray-300 px-4 py-2 rounded-md'
+  },
+  input: 'bg-light border border-gray-300 px-3 py-2 rounded-md focus:border-accent',
+  card: 'bg-light p-6 rounded-lg shadow-sm border border-gray-200'
+};
+```
+
+## Styling Guidelines
+- **Minimalist modern design** with consistent spacing and typography
+- **Unified look & feel** across all components
+- **Responsive design** with mobile-first approach
+- **Accessibility considerations** in all UI components

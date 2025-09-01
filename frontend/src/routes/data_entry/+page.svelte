@@ -23,13 +23,14 @@
 <Grid cols="1fr">
 	<Column>
 		<Container>
-			<div class="space-y-8">
+			<div class="mb-16">
 				<SegmentedControl 
 					label="Select Data Type"
 					options={dataTypeOptions}
 					bind:selectedValue={selectedDataType}
 				/>
-				
+			</div>
+			<div>
 				<CrudTable model={selectedDataType} />
 			</div>
 		</Container>

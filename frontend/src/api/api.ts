@@ -1,14 +1,23 @@
+import { translateApiError, translateNetworkError } from './errorTranslator';
+
+// API Response interface
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Database model endpoints mapping
 const MODEL_ENDPOINTS = {
-  'Period': 'periods',
-  'Pop': 'pops', 
-  'Party': 'parties',
-  'PopPeriod': 'pop-periods',
-  'PartyPeriod': 'party-periods',
-  'PopVote': 'pop-votes',
-  'ElectionResult': 'election-results'
+  'Period': 'period',
+  'Pop': 'pop', 
+  'Party': 'party',
+  'PopPeriod': 'pop-period',
+  'PartyPeriod': 'party-period',
+  'PopVote': 'pop-vote',
+  'ElectionResult': 'election-result'
 } as const;
 
 type ModelName = keyof typeof MODEL_ENDPOINTS;
@@ -24,76 +33,91 @@ export class APIError extends Error {
   }
 }
 
-// Generic HTTP request function
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  const config: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  };
-
+// Generic HTTP request function with integrated error handling
+async function request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   try {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
     const response = await fetch(url, config);
     
     if (!response.ok) {
       const errorMessage = await response.text();
-      throw new APIError(
-        errorMessage || `HTTP error! status: ${response.status}`,
-        response.status
-      );
+      return {
+        success: false,
+        error: translateApiError(errorMessage, response.status)
+      };
     }
     
     const contentType = response.headers.get('content-type');
+    let data: T;
+    
     if (contentType && contentType.includes('application/json')) {
-      return await response.json();
+      data = await response.json();
+    } else {
+      data = {} as T;
     }
     
-    return {} as T;
+    return { success: true, data };
+    
   } catch (error) {
-    if (error instanceof APIError) {
-      throw error;
-    }
-    throw new APIError(`Network error: ${error}`, 0);
+    return {
+      success: false,
+      error: translateNetworkError(error)
+    };
   }
 }
 
-// Generic CRUD functions
-export async function create<T>(model: ModelName, data: Partial<T>): Promise<T> {
-  const endpoint = `/${MODEL_ENDPOINTS[model]}/`;
-  return request<T>(endpoint, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
+// CRUD API functions 
+export const API = {
+  async create<T>(model: ModelName, data: Partial<T>): Promise<ApiResponse<T>> {
+    // Filter out empty values and id field
+    const submitData = Object.fromEntries(
+      Object.entries(data).filter(([key, value]) => 
+        key !== 'id' && value !== null && value !== undefined && value !== ''
+      )
+    );
+    
+    return request<T>(`/${MODEL_ENDPOINTS[model]}/`, {
+      method: 'POST',
+      body: JSON.stringify(submitData),
+    });
+  },
 
-export async function getAll<T>(model: ModelName, skip: number = 0, limit: number = 100): Promise<T[]> {
-  const endpoint = `/${MODEL_ENDPOINTS[model]}?skip=${skip}&limit=${limit}`;
-  return request<T[]>(endpoint);
-}
+  async getAll<T>(model: ModelName, skip: number = 0, limit: number = 100): Promise<ApiResponse<T[]>> {
+    return request<T[]>(`/${MODEL_ENDPOINTS[model]}?skip=${skip}&limit=${limit}`);
+  },
 
-export async function getById<T>(model: ModelName, id: number): Promise<T> {
-  const endpoint = `/${MODEL_ENDPOINTS[model]}/${id}`;
-  return request<T>(endpoint);
-}
+  async getById<T>(model: ModelName, id: number): Promise<ApiResponse<T>> {
+    return request<T>(`/${MODEL_ENDPOINTS[model]}/${id}`);
+  },
 
-export async function update<T>(model: ModelName, id: number, data: Partial<T>): Promise<T> {
-  const endpoint = `/${MODEL_ENDPOINTS[model]}/${id}`;
-  return request<T>(endpoint, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
-}
+  async update<T>(model: ModelName, id: number, data: Partial<T>): Promise<ApiResponse<T>> {
+    return request<T>(`/${MODEL_ENDPOINTS[model]}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
 
-export async function remove<T>(model: ModelName, id: number): Promise<T> {
-  const endpoint = `/${MODEL_ENDPOINTS[model]}/${id}`;
-  return request<T>(endpoint, {
-    method: 'DELETE',
-  });
-}
+  async delete<T>(model: ModelName, id: number): Promise<ApiResponse<T>> {
+    return request<T>(`/${MODEL_ENDPOINTS[model]}/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getDataStructure(model: string): Promise<ApiResponse<any>> {
+    return request(`/data-structure/${model.toLowerCase()}`, {
+      method: 'GET',
+    });
+  }
+};
 
 // TypeScript interfaces matching the backend models
 export interface Period {

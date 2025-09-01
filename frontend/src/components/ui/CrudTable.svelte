@@ -1,102 +1,174 @@
-<script>
+<script lang="ts">
   import ModalData from './ModalData.svelte';
+  import Button from './Button.svelte';
+  import { API } from '../../api/api';
+  import { COMPONENT_STYLES } from '../../styles/component-classes.js';
   
-  export let model = '';
+  // Svelte 5 runes
+  const { model } = $props<{ model: string }>();
   
-  let data = [];
-  let headers = [];
-  let loading = false;
+  let data = $state<any[]>([]);
+  let headers = $state<string[]>([]);
+  let loading = $state(false);
   
-  // CSS Class Configurations - Easy to customize
-  const tableClasses = {
-    wrapper: "w-full",
-    scrollWrapper: "overflow-x-auto",
-    table: "min-w-full",
-    header: {
-      thead: "bg-light",
-      tr: "bg-light-alt",
-      th: "px-4 py-4 text-left text-xs font-medium uppercase tracking-wider first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg"
-    },
-    body: {
-      tbody: "divide-y divide-light-alt",
-      tr: "hover:bg-light-alt transition-colors duration-200 border-b border-light-alt",
-      td: "px-4 py-4 whitespace-nowrap text-sm text-dark-alt first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg"
-    },
-    states: {
-      loading: "text-center py-4 text-dark-alt",
-      noData: "text-center py-4 text-dark-alt"
-    }
-  };
+  // Modal state management
+  let isModalActive = $state(false);
+  let modalType = $state<'create' | 'edit'>('create');
+  let editData = $state<any>(null);
   
+  const styles = COMPONENT_STYLES.table;
+  const colorStyles = COMPONENT_STYLES.colorDisplay;
+  const layoutStyles = COMPONENT_STYLES.layout;
+  
+  // Load data structure for table headers
   async function loadDataStructure() {
     if (!model) return;
     
-    try {
-      const response = await fetch(`/api/data-structure/${model.toLowerCase()}`);
-      const structure = await response.json();
-      headers = (structure.columns || []).filter(column => column !== 'id');
-    } catch (error) {
-      console.error('Error loading data structure:', error);
+    const result = await API.getDataStructure(model.toLowerCase());
+    if (result.success && result.data?.columns) {
+      headers = result.data.columns.filter((column: string) => column !== 'id');
+    } else {
+      console.error('Error loading data structure:', result.error);
       headers = [];
     }
   }
 
+  // Load table data
   async function loadData() {
     if (!model) return;
     
     loading = true;
-    try {
-      const response = await fetch(`/api/${model.toLowerCase()}`);
-      const result = await response.json();
-      data = result || [];
-    } catch (error) {
-      console.error('Error loading data:', error);
+    const result = await API.getAll(model as any);
+    
+    if (result.success && result.data) {
+      data = result.data;
+    } else {
+      console.error('Error loading data:', result.error);
       data = [];
-    } finally {
-      loading = false;
     }
+    
+    loading = false;
   }
-  
-  $: if (model) {
-    loadDataStructure();
+
+  // Handle successful data creation/update
+  function handleDataChanged() {
+    isModalActive = false; // Close modal
+    editData = null; // Clear edit data
     loadData();
   }
+
+  // Open modal with type and optional data
+  function openModal(type: 'create' | 'edit', data: any = null) {
+    modalType = type;
+    editData = data;
+    isModalActive = true;
+  }
+
+  // Handle delete action
+  async function handleDelete(row: any) {
+    if (!row.id || !confirm('Are you sure you want to delete this item?')) return;
+    
+    const result = await API.delete(model as any, row.id);
+    if (result.success) {
+      loadData();
+    } else {
+      console.error('Error deleting item:', result.error);
+    }
+  }
+
+  // Reactive effect to load data when model changes
+  $effect(() => {
+    if (model) {
+      loadDataStructure();
+      loadData();
+    }
+  });
 </script>
 
-<div class={tableClasses.wrapper}>
-  <!-- New Entry Button -->
-  <div class="mb-4 flex justify-start">
-    <ModalData datamodel={model} title={`Create new ${model}`} buttonText="New Entry" />
+<div class={styles.wrapper}>
+  <!-- Action Bar -->
+  <div class={COMPONENT_STYLES.layout.buttonGroup}>
+    <Button 
+      text="New Entry" 
+      type="text" 
+      theme="accent" 
+      onclick={() => openModal('create')} 
+    />
   </div>
   
   {#if loading}
-    <div class={tableClasses.states.loading}>Loading...</div>
+    <div class={styles.states.loading}>
+      Loading...
+    </div>
   {:else if data.length === 0}
-    <div class={tableClasses.states.noData}>No data available</div>
+    <div class={styles.states.noData}>
+      No data available
+    </div>
   {:else}
-    <div class={tableClasses.scrollWrapper}>
-      <table class={tableClasses.table}>
-        <thead class={tableClasses.header.thead}>
-          <tr class={tableClasses.header.tr}>
-            {#each headers as header}
-              <th class={tableClasses.header.th}>
-                {header}
+    <div class={styles.scrollWrapper}>
+      <table class={styles.table}>
+        <!-- Table Header -->
+        <thead class={styles.header.thead}>
+          <tr class={styles.header.tr}>
+            {#each headers as header, index}
+              <th class={index === headers.length - 1 ? styles.header.thLast : styles.header.th}>
+                {header.replace(/_/g, ' ')}
               </th>
             {/each}
+            <th class={styles.header.thActions}>
+              Actions
+            </th>
           </tr>
         </thead>
-        <tbody class={tableClasses.body.tbody}>
-          {#each data as row, index}
-            <tr class={tableClasses.body.tr}>
-              {#each headers as header}
-                <td class={tableClasses.body.td}>
-                  {row[header] ?? '-'}
+        
+        <!-- Table Body -->
+        <tbody class={styles.body.tbody}>
+          {#each data as row (row.id)}
+            <tr class={styles.body.tr}>
+              {#each headers as header, index}
+                <td class={index === headers.length - 1 ? styles.body.tdLast : styles.body.td}>
+                  {#if header === 'color' && row[header]}
+                    <div class={colorStyles.wrapper}>
+                      <div 
+                        class={colorStyles.swatch}
+                        style="background-color: {row[header]}"
+                      ></div>
+                      <span class={colorStyles.text}>{row[header]}</span>
+                    </div>
+                  {:else}
+                    {row[header] ?? '-'}
+                  {/if}
                 </td>
               {/each}
+              <td class={styles.body.tdActions}>
+                <div class={layoutStyles.actionButtons}>
+                  <Button 
+                    icon="bi bi-pencil-square"
+                    type="icon"
+                    theme="light" 
+                    onclick={() => openModal('edit', row)} 
+                  />
+                  <Button 
+                    icon="bi bi-trash3"
+                    type="icon"
+                    theme="light" 
+                    onclick={() => handleDelete(row)} 
+                  />
+                </div>
+              </td>
             </tr>
           {/each}
         </tbody>
       </table>
     </div>
   {/if}
+
+  <!-- Single Modal for both Create and Edit -->
+  <ModalData 
+    active={isModalActive}
+    datamodel={model}
+    type={modalType}
+    editData={editData}
+    onSuccess={handleDataChanged}
+  />
 </div>
