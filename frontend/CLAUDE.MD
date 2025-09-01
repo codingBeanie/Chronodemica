@@ -74,18 +74,11 @@ export const DESIGN_TOKENS = {
 - All components MUST use centralized theme classes
 - Easy global theme changes via single config file
 
-### Component Style Classes
-Create `/src/styles/component-classes.js` for reusable class combinations:
-```javascript
-export const COMPONENT_STYLES = {
-  button: {
-    primary: 'bg-accent text-white hover:opacity-90 px-4 py-2 rounded-md',
-    secondary: 'bg-light text-dark-text border border-gray-300 px-4 py-2 rounded-md'
-  },
-  input: 'bg-light border border-gray-300 px-3 py-2 rounded-md focus:border-accent',
-  card: 'bg-light p-6 rounded-lg shadow-sm border border-gray-200'
-};
-```
+### Component Style Guidelines
+- **Component-local styling** - Each component defines its own styles internally
+- **No centralized style classes** - Styles are encapsulated within components
+- **Consistent design tokens** - Use shared color/spacing variables from Tailwind config
+- **Reusable components** - Create variations through props, not external style classes
 
 ## Styling Guidelines
 - **Minimalist modern design** with consistent spacing and typography

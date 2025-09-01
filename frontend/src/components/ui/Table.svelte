@@ -2,7 +2,6 @@
   import ModalData from './ModalData.svelte';
   import Button from './Button.svelte';
   import { API } from '../../api/api';
-  import { COMPONENT_STYLES } from '../../styles/component-classes.js';
   
   // Svelte 5 runes
   const { model, mode = 'crud' } = $props<{ 
@@ -23,9 +22,44 @@
   let sortColumn = $state<string | null>(null);
   let sortDirection = $state<'ascending' | 'descending'>('ascending');
   
-  const styles = COMPONENT_STYLES.table;
-  const colorStyles = COMPONENT_STYLES.colorDisplay;
-  const layoutStyles = COMPONENT_STYLES.layout;
+  // Local table styles
+  const styles = {
+    wrapper: 'w-full',
+    scrollWrapper: 'overflow-x-auto',
+    table: 'min-w-full table-auto',
+    
+    header: {
+      thead: 'bg-light-alt',
+      tr: 'bg-light-alt',
+      th: 'px-6 py-4 text-left text-xs font-medium text-dark uppercase tracking-wider whitespace-nowrap',
+      thLast: 'px-6 py-4 text-left text-xs font-medium text-dark uppercase tracking-wider w-full',
+      thActions: 'px-6 py-4 text-right text-xs font-medium text-dark uppercase tracking-wider w-1 whitespace-nowrap'
+    },
+    
+    body: {
+      tbody: 'bg-light divide-y divide-light-alt',
+      tr: 'hover:bg-light-alt transition-colors duration-200',
+      td: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt',
+      tdLast: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt w-full',
+      tdActions: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt text-right'
+    },
+    
+    states: {
+      loading: 'text-center py-8 text-dark',
+      noData: 'text-center py-8 text-dark'
+    }
+  };
+
+  const colorStyles = {
+    wrapper: 'flex items-center space-x-2',
+    swatch: 'w-6 h-6 border border-light-alt rounded flex-shrink-0',
+    text: 'font-mono text-sm text-dark-alt'
+  };
+
+  const layoutStyles = {
+    buttonGroup: 'mb-4 flex justify-start',
+    actionButtons: 'flex items-center space-x-2'
+  };
   
   // Load data structure for table headers
   async function loadDataStructure() {
@@ -119,7 +153,7 @@
 <div class={styles.wrapper}>
   <!-- Action Bar - only show in CRUD mode -->
   {#if mode === 'crud'}
-    <div class={COMPONENT_STYLES.layout.buttonGroup}>
+    <div class={layoutStyles.buttonGroup}>
       <Button 
         text="New Entry" 
         type="text" 

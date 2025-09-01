@@ -3,7 +3,6 @@
   import Input from '../inputs/Input.svelte';
   import ColorPicker from '../inputs/ColorPicker.svelte';
   import { API } from '../../api/api';
-  import { COMPONENT_STYLES } from '../../styles/component-classes.js';
   
   interface Props {
     active: boolean;
@@ -42,7 +41,21 @@
   let fieldErrors: Record<string, string> = $state({});
   let apiError: string = $state('');
   
-  const modalStyles = COMPONENT_STYLES.modal;
+  // Local modal styles
+  const modalStyles = {
+    overlay: 'fixed inset-0 flex items-center justify-center z-50',
+    backdrop: 'rgba(0,0,0 , 0.7)', // dark color with transparency
+    container: 'bg-light rounded-lg shadow-xl max-w-md w-full mx-4',
+    header: 'px-6 py-4 border-b border-light-alt',
+    title: 'text-xl font-semibold text-dark',
+    content: 'px-6 py-4 max-h-96 overflow-auto',
+    footer: 'px-6 py-4 flex items-center justify-between',
+    form: 'space-y-4',
+    field: 'space-y-1',
+    error: 'text-failure text-sm mt-1',
+    loading: 'text-dark p-4 bg-light-alt rounded text-center',
+    apiError: 'text-failure text-sm'
+  };
   
   async function loadSchema() {
     console.log('Loading schema for:', datamodel);

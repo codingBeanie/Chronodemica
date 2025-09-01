@@ -7,7 +7,7 @@
 	let { cols, gap = "gap-4", children } = $props();
 </script>
 
-<div class="w-full px-6 py-4">
+<div class="w-full px-1 py-1">
 	<div 
 		class="grid {gap}" 
 		style="grid-template-columns: {cols};"

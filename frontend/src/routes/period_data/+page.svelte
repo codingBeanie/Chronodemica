@@ -183,7 +183,7 @@
 <Grid cols="1fr">
 	<!-- filter -->
 	<Container>
-		<Grid cols="1fr 1fr">
+		<Grid cols="2fr 1fr 2fr">
 			<!--Period Selection-->
 			<div>
 				<SegmentedControl 
@@ -200,8 +200,6 @@
 					bind:selectedValue={selectedDataModel}
 				/>
 			</div>
-		</Grid>
-		<Grid cols="1fr">
 			<!--Object Selection-->
 			<div>
 				<SegmentedControl 
