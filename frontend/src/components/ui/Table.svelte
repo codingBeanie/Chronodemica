@@ -5,7 +5,10 @@
   import { COMPONENT_STYLES } from '../../styles/component-classes.js';
   
   // Svelte 5 runes
-  const { model } = $props<{ model: string }>();
+  const { model, mode = 'crud' } = $props<{ 
+    model: string;
+    mode?: 'crud' | 'simple';
+  }>();
   
   let data = $state<any[]>([]);
   let headers = $state<string[]>([]);
@@ -15,6 +18,10 @@
   let isModalActive = $state(false);
   let modalType = $state<'create' | 'edit'>('create');
   let editData = $state<any>(null);
+  
+  // Sorting state management
+  let sortColumn = $state<string | null>(null);
+  let sortDirection = $state<'ascending' | 'descending'>('ascending');
   
   const styles = COMPONENT_STYLES.table;
   const colorStyles = COMPONENT_STYLES.colorDisplay;
@@ -38,7 +45,7 @@
     if (!model) return;
     
     loading = true;
-    const result = await API.getAll(model as any);
+    const result = await API.getAll(model as any, 0, 100, sortColumn || undefined, sortDirection);
     
     if (result.success && result.data) {
       data = result.data;
@@ -76,6 +83,30 @@
     }
   }
 
+  // Handle sorting toggle
+  function toggleSort(column: string) {
+    if (sortColumn === column) {
+      // Same column clicked - toggle direction
+      sortDirection = sortDirection === 'ascending' ? 'descending' : 'ascending';
+    } else {
+      // Different column clicked - set new column and default to ascending
+      sortColumn = column;
+      sortDirection = 'ascending';
+    }
+    
+    console.log('Sorting column:', column, 'Direction:', sortDirection);
+    // Reload data with new sorting
+    loadData();
+  }
+  
+  // Get sort icon for a column
+  function getSortIcon(column: string): string {
+    if (sortColumn !== column) {
+      return 'bi bi-arrow-down-up'; // Default unsorted icon
+    }
+    return sortDirection === 'ascending' ? 'bi bi-arrow-up' : 'bi bi-arrow-down';
+  }
+
   // Reactive effect to load data when model changes
   $effect(() => {
     if (model) {
@@ -86,15 +117,17 @@
 </script>
 
 <div class={styles.wrapper}>
-  <!-- Action Bar -->
-  <div class={COMPONENT_STYLES.layout.buttonGroup}>
-    <Button 
-      text="New Entry" 
-      type="text" 
-      theme="accent" 
-      onclick={() => openModal('create')} 
-    />
-  </div>
+  <!-- Action Bar - only show in CRUD mode -->
+  {#if mode === 'crud'}
+    <div class={COMPONENT_STYLES.layout.buttonGroup}>
+      <Button 
+        text="New Entry" 
+        type="text" 
+        theme="accent" 
+        onclick={() => openModal('create')} 
+      />
+    </div>
+  {/if}
   
   {#if loading}
     <div class={styles.states.loading}>
@@ -112,12 +145,22 @@
           <tr class={styles.header.tr}>
             {#each headers as header, index}
               <th class={index === headers.length - 1 ? styles.header.thLast : styles.header.th}>
-                {header.replace(/_/g, ' ')}
+                <div class="flex items-center justify-between">
+                  <span>{header.replace(/_/g, ' ')}</span>
+                  <button
+                    onclick={() => toggleSort(header)}
+                    class="ml-2 p-1 hover:bg-gray-200 rounded transition-colors"
+                  >
+                    <i class="{getSortIcon(header)} {sortColumn === header ? 'text-blue-600' : 'text-gray-500'} text-sm"></i>
+                  </button>
+                </div>
               </th>
             {/each}
-            <th class={styles.header.thActions}>
-              Actions
-            </th>
+            {#if mode === 'crud'}
+              <th class={styles.header.thActions}>
+                Actions
+              </th>
+            {/if}
           </tr>
         </thead>
         
@@ -140,22 +183,24 @@
                   {/if}
                 </td>
               {/each}
-              <td class={styles.body.tdActions}>
-                <div class={layoutStyles.actionButtons}>
-                  <Button 
-                    icon="bi bi-pencil-square"
-                    type="icon"
-                    theme="light" 
-                    onclick={() => openModal('edit', row)} 
-                  />
-                  <Button 
-                    icon="bi bi-trash3"
-                    type="icon"
-                    theme="light" 
-                    onclick={() => handleDelete(row)} 
-                  />
-                </div>
-              </td>
+              {#if mode === 'crud'}
+                <td class={styles.body.tdActions}>
+                  <div class={layoutStyles.actionButtons}>
+                    <Button 
+                      icon="bi bi-pencil-square"
+                      type="icon"
+                      theme="light" 
+                      onclick={() => openModal('edit', row)} 
+                    />
+                    <Button 
+                      icon="bi bi-trash3"
+                      type="icon"
+                      theme="light" 
+                      onclick={() => handleDelete(row)} 
+                    />
+                  </div>
+                </td>
+              {/if}
             </tr>
           {/each}
         </tbody>
@@ -163,12 +208,14 @@
     </div>
   {/if}
 
-  <!-- Single Modal for both Create and Edit -->
-  <ModalData 
-    active={isModalActive}
-    datamodel={model}
-    type={modalType}
-    editData={editData}
-    onSuccess={handleDataChanged}
-  />
+  <!-- Single Modal for both Create and Edit - only in CRUD mode -->
+  {#if mode === 'crud'}
+    <ModalData 
+      active={isModalActive}
+      datamodel={model}
+      type={modalType}
+      editData={editData}
+      onSuccess={handleDataChanged}
+    />
+  {/if}
 </div>

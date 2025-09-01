@@ -91,8 +91,47 @@ export const API = {
     });
   },
 
-  async getAll<T>(model: ModelName, skip: number = 0, limit: number = 100): Promise<ApiResponse<T[]>> {
-    return request<T[]>(`/${MODEL_ENDPOINTS[model]}?skip=${skip}&limit=${limit}`);
+  async getAll<T>(
+    model: ModelName, 
+    skip: number = 0, 
+    limit: number = 100, 
+    sortBy?: string, 
+    sortDirection?: 'ascending' | 'descending'
+  ): Promise<ApiResponse<T[]>> {
+    let endpoint = `/${MODEL_ENDPOINTS[model]}?skip=${skip}&limit=${limit}`;
+    
+    if (sortBy && sortDirection) {
+      endpoint += `&sort_by=${sortBy}&sort_direction=${sortDirection}`;
+    }
+    
+    const result = await request<T[]>(endpoint);
+    
+    // Client-side sorting fallback if backend doesn't support sorting
+    if (result.success && result.data && sortBy && sortDirection) {
+      const sortedData = [...result.data].sort((a: any, b: any) => {
+        const aVal = a[sortBy];
+        const bVal = b[sortBy];
+        
+        // Handle null/undefined values
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        
+        // Compare values
+        let comparison = 0;
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          comparison = aVal.localeCompare(bVal);
+        } else {
+          comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        }
+        
+        return sortDirection === 'descending' ? -comparison : comparison;
+      });
+      
+      return { ...result, data: sortedData };
+    }
+    
+    return result;
   },
 
   async getById<T>(model: ModelName, id: number): Promise<ApiResponse<T>> {

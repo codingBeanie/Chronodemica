@@ -155,24 +155,12 @@
     if (onSuccess) onSuccess();
   }
 
-  // Load schema when modal becomes active
+  // Load schema when modal becomes active or datamodel changes
   $effect(() => {
     if (active) {
       fieldErrors = {}; // Clear previous errors
       apiError = ''; // Clear previous API errors
-      if (!schemaData) {
-        loadSchema();
-      } else if (schemaData.fields) {
-        // Re-initialize formData when modal opens (for edit mode data)
-        const initialFormData: Record<string, any> = {};
-        for (const [fieldName, fieldInfo] of Object.entries(schemaData.fields)) {
-          const typedFieldInfo = fieldInfo as FieldInfo;
-          initialFormData[fieldName] = (type === 'edit' && editData && editData[fieldName] !== undefined) 
-            ? editData[fieldName] 
-            : (typedFieldInfo.default || '');
-        }
-        formData = initialFormData;
-      }
+      loadSchema(); // Always reload schema to ensure correct model data
     }
   });
 </script>

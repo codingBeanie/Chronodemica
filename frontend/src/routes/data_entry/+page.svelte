@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ContentHeader from '../../components/ui/ContentHeader.svelte';
 	import SegmentedControl from '../../components/ui/SegmentedControl.svelte';
-	import CrudTable from '../../components/ui/CrudTable.svelte';
+	import Table from '../../components/ui/Table.svelte';
 	import Container from '../../components/ui/Container.svelte';
 	import Grid from '../../components/ui/Grid.svelte';
 	import Column from '../../components/ui/Column.svelte';
@@ -31,7 +31,7 @@
 				/>
 			</div>
 			<div>
-				<CrudTable model={selectedDataType} />
+				<Table model={selectedDataType} mode="crud" />
 			</div>
 		</Container>
 	</Column>

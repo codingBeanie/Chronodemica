@@ -20,6 +20,13 @@
 					text="Data Entry"
 				/>
 			</li>
+			<li>
+				<NavLink 
+					href="/period_data" 
+					icon="table"
+					text="Period Data"
+				/>
+			</li>
 		</ul>
 	</div>
 	
