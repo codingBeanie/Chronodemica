@@ -5,7 +5,6 @@
 	import Container from '../../components/ui/Container.svelte';
 	import Grid from '../../components/ui/Grid.svelte';
 	import Column from '../../components/ui/Column.svelte';
-
 	// Configuration hashmap for the segmented control options
 	const dataTypeOptions = {
 		'Population': 'Pop',

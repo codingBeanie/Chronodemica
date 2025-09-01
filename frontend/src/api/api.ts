@@ -96,12 +96,23 @@ export const API = {
     skip: number = 0, 
     limit: number = 100, 
     sortBy?: string, 
-    sortDirection?: 'ascending' | 'descending'
+    sortDirection?: 'ascending' | 'descending',
+    filters?: Record<string, any>
   ): Promise<ApiResponse<T[]>> {
     let endpoint = `/${MODEL_ENDPOINTS[model]}?skip=${skip}&limit=${limit}`;
     
     if (sortBy && sortDirection) {
-      endpoint += `&sort_by=${sortBy}&sort_direction=${sortDirection}`;
+      const direction = sortDirection === 'descending' ? 'desc' : 'asc';
+      endpoint += `&sort_by=${sortBy}&sort_direction=${direction}`;
+    }
+    
+    // Add filters as query parameters
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== null && value !== undefined) {
+          endpoint += `&${key}=${encodeURIComponent(value)}`;
+        }
+      }
     }
     
     const result = await request<T[]>(endpoint);

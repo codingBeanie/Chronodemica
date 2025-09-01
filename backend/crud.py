@@ -32,9 +32,28 @@ def get_item(db: Session, model: Type[T], id: int) -> Optional[T]:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
-def get_items(db: Session, model: Type[T], skip: int = 0, limit: int = 100) -> List[T]:
+def get_items(db: Session, model: Type[T], skip: int = 0, limit: int = 100, filters: dict = None, sort_by: str = None, sort_direction: str = "asc") -> List[T]:
     try:
-        statement = select(model).offset(skip).limit(limit)
+        statement = select(model)
+        
+        # Apply filters
+        if filters:
+            for field, value in filters.items():
+                if hasattr(model, field):
+                    column = getattr(model, field)
+                    statement = statement.where(column == value)
+        
+        # Apply sorting
+        if sort_by and hasattr(model, sort_by):
+            column = getattr(model, sort_by)
+            if sort_direction.lower() == "desc":
+                statement = statement.order_by(column.desc())
+            else:
+                statement = statement.order_by(column.asc())
+        
+        # Apply pagination
+        statement = statement.offset(skip).limit(limit)
+        
         return db.exec(statement).all()
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

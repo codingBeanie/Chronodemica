@@ -1,6 +1,6 @@
 import os
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, create_engine
 from dotenv import load_dotenv
 from models import (
@@ -28,8 +28,18 @@ def create_period(period: Period, db: Session = Depends(get_session)):
     return crud.create_item(db, period)
 
 @router.get("/period/", response_model=List[Period])
-def read_periods(skip: int = 0, limit: int = 100, db: Session = Depends(get_session)):
-    return crud.get_items(db, Period, skip, limit)
+def read_periods(
+    skip: int = 0, 
+    limit: int = 100, 
+    sort_by: Optional[str] = None,
+    sort_direction: Optional[str] = "asc",
+    year: Optional[int] = Query(None),
+    db: Session = Depends(get_session)
+):
+    filters = {}
+    if year is not None:
+        filters["year"] = year
+    return crud.get_items(db, Period, skip, limit, filters, sort_by, sort_direction)
 
 @router.get("/period/{period_id}", response_model=Period)
 def read_period(period_id: int, db: Session = Depends(get_session)):
@@ -56,8 +66,18 @@ def create_pop(pop: Pop, db: Session = Depends(get_session)):
     return crud.create_item(db, pop)
 
 @router.get("/pop/", response_model=List[Pop])
-def read_pops(skip: int = 0, limit: int = 100, db: Session = Depends(get_session)):
-    return crud.get_items(db, Pop, skip, limit)
+def read_pops(
+    skip: int = 0, 
+    limit: int = 100, 
+    sort_by: Optional[str] = None,
+    sort_direction: Optional[str] = "asc",
+    name: Optional[str] = Query(None),
+    db: Session = Depends(get_session)
+):
+    filters = {}
+    if name is not None:
+        filters["name"] = name
+    return crud.get_items(db, Pop, skip, limit, filters, sort_by, sort_direction)
 
 @router.get("/pop/{pop_id}", response_model=Pop)
 def read_pop(pop_id: int, db: Session = Depends(get_session)):
@@ -84,8 +104,21 @@ def create_pop_period(pop_period: PopPeriod, db: Session = Depends(get_session))
     return crud.create_item(db, pop_period)
 
 @router.get("/pop-period/", response_model=List[PopPeriod])
-def read_pop_periods(skip: int = 0, limit: int = 100, db: Session = Depends(get_session)):
-    return crud.get_items(db, PopPeriod, skip, limit)
+def read_pop_periods(
+    skip: int = 0, 
+    limit: int = 100, 
+    sort_by: Optional[str] = None,
+    sort_direction: Optional[str] = "asc",
+    pop_id: Optional[int] = Query(None),
+    period_id: Optional[int] = Query(None),
+    db: Session = Depends(get_session)
+):
+    filters = {}
+    if pop_id is not None:
+        filters["pop_id"] = pop_id
+    if period_id is not None:
+        filters["period_id"] = period_id
+    return crud.get_items(db, PopPeriod, skip, limit, filters, sort_by, sort_direction)
 
 @router.get("/pop-period/{pop_period_id}", response_model=PopPeriod)
 def read_pop_period(pop_period_id: int, db: Session = Depends(get_session)):
@@ -112,8 +145,18 @@ def create_party(party: Party, db: Session = Depends(get_session)):
     return crud.create_item(db, party)
 
 @router.get("/party/", response_model=List[Party])
-def read_parties(skip: int = 0, limit: int = 100, db: Session = Depends(get_session)):
-    return crud.get_items(db, Party, skip, limit)
+def read_parties(
+    skip: int = 0, 
+    limit: int = 100, 
+    sort_by: Optional[str] = None,
+    sort_direction: Optional[str] = "asc",
+    name: Optional[str] = Query(None),
+    db: Session = Depends(get_session)
+):
+    filters = {}
+    if name is not None:
+        filters["name"] = name
+    return crud.get_items(db, Party, skip, limit, filters, sort_by, sort_direction)
 
 @router.get("/party/{party_id}", response_model=Party)
 def read_party(party_id: int, db: Session = Depends(get_session)):
@@ -140,8 +183,21 @@ def create_party_period(party_period: PartyPeriod, db: Session = Depends(get_ses
     return crud.create_item(db, party_period)
 
 @router.get("/party-period/", response_model=List[PartyPeriod])
-def read_party_periods(skip: int = 0, limit: int = 100, db: Session = Depends(get_session)):
-    return crud.get_items(db, PartyPeriod, skip, limit)
+def read_party_periods(
+    skip: int = 0, 
+    limit: int = 100, 
+    sort_by: Optional[str] = None,
+    sort_direction: Optional[str] = "asc",
+    party_id: Optional[int] = Query(None),
+    period_id: Optional[int] = Query(None),
+    db: Session = Depends(get_session)
+):
+    filters = {}
+    if party_id is not None:
+        filters["party_id"] = party_id
+    if period_id is not None:
+        filters["period_id"] = period_id
+    return crud.get_items(db, PartyPeriod, skip, limit, filters, sort_by, sort_direction)
 
 @router.get("/party-period/{party_period_id}", response_model=PartyPeriod)
 def read_party_period(party_period_id: int, db: Session = Depends(get_session)):
