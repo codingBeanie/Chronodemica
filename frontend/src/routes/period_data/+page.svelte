@@ -1,5 +1,4 @@
 <script lang="ts">
-	import ContentHeader from '../../components/ui/ContentHeader.svelte';
 	import Grid from '../../components/ui/Grid.svelte';
 	import Container from '../../components/ui/Container.svelte';
 	import SegmentedControl from '../../components/ui/SegmentedControl.svelte';
@@ -22,8 +21,8 @@
 	let previousPeriod = $state<Period | null>(null);
 	let previousData = $state<PeriodData | null>(null);
 	let unsavedChanges = $state(false);
-	let selectedPeriodYear = $state<String>(''); 
-	let selectedObjectName =$state<String>('');  
+	let selectedPeriodYear = $state<string>(''); 
+	let selectedObjectName = $state<string>('');  
 
 	// Derived values
 	let periodOptionsArray = $derived(periods.map(p => ({ 
@@ -67,7 +66,7 @@
 			{ period_id: periodId, [filterKey]: objectId }
 		);
 		
-		return result.success && result.data && result.data.length > 0 ? result.data[0] : null;
+		return result.success && result.data && result.data.length > 0 ? result.data[0] as PeriodData : null;
 	}
 
 	async function createPeriodData(
@@ -91,7 +90,7 @@
 			}
 
 			const result = await API.create(modelName as any, baseData);
-			return result.success && result.data ? result.data : null;
+			return result.success && result.data ? result.data as PeriodData : null;
 		} catch (error) {
 			console.error('Error creating period data:', error);
 			return null;
@@ -121,7 +120,9 @@
 
 		if (periodResult.success && periodResult.data) {
 			periods = periodResult.data;
-			selectedPeriod = getFirstObjectId(periods);
+			if (periods.length > 0) {
+				selectedPeriod = periods[0].id?.toString() || '';
+			}
 		}
 		if (popResult.success && popResult.data) pops = popResult.data;
 		if (partyResult.success && partyResult.data) parties = partyResult.data;
@@ -166,7 +167,6 @@
 	});
 </script>
 
-<ContentHeader title="Periodic Detail Data" />
 	
 <Grid cols="1fr 5fr 2fr">
 	<!-- filter -->
@@ -206,7 +206,7 @@
 				bind:data={periodData} 
 				bind:unsavedChanges={unsavedChanges}
 				objectName={selectedObjectName}
-				periodYear={selectedPeriodYear}
+				periodYear={parseInt(selectedPeriodYear) || 0}
 			/>
 		{:else}
 			<div class="text-center">

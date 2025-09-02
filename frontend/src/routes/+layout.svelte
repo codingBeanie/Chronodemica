@@ -11,11 +11,9 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
 </svelte:head>
 
-<div class="flex min-h-screen bg-light-alt text-dark-alt px-8">
+<div class="min-h-screen bg-light-alt text-dark-alt">
 	<Navigation />
-	<main class="flex-1 h-full flex pt-4 flex-col">
-		<div class="flex-1">
-			{@render children?.()}
-		</div>
+	<main class="px-6 py-4">
+		{@render children?.()}
 	</main>
 </div>

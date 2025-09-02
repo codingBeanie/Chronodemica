@@ -28,9 +28,6 @@
 	];
 </script>
 
-<ContentHeader 
-	title="Welcome to Chronodemica" 
-/>
 
 <!-- Start Guide -->
 <Grid cols="1fr">

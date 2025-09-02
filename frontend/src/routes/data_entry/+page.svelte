@@ -15,9 +15,6 @@
 	let selectedDataType: 'Pop' | 'Party' | 'Period' = 'Pop';
 </script>
 
-<ContentHeader 
-	title="Data Entry" 
-/>
 
 <Grid cols="1fr 7fr">
 		<Container title="Filter">
