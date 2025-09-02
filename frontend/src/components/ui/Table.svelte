@@ -22,87 +22,81 @@
   let sortColumn = $state<string | null>(null);
   let sortDirection = $state<'ascending' | 'descending'>('ascending');
   
-  // Local table styles
+  // Consolidated styles configuration
   const styles = {
     wrapper: 'w-full',
     scrollWrapper: 'overflow-x-auto',
     table: 'min-w-full table-auto',
     
-    header: {
-      thead: 'bg-light-alt',
-      tr: 'bg-light-alt',
-      th: 'px-6 py-4 text-left text-xs font-medium text-dark uppercase tracking-wider whitespace-nowrap',
-      thLast: 'px-6 py-4 text-left text-xs font-medium text-dark uppercase tracking-wider w-full',
-      thActions: 'px-6 py-4 text-right text-xs font-medium text-dark uppercase tracking-wider w-1 whitespace-nowrap'
-    },
+    // Header styles
+    thead: 'bg-light-alt',
+    thBase: 'px-6 py-4 text-left text-xs font-medium text-dark uppercase tracking-wider whitespace-nowrap',
+    thLast: 'px-6 py-4 text-left text-xs font-medium text-dark uppercase tracking-wider w-full',
+    thActions: 'px-6 py-4 text-right text-xs font-medium text-dark uppercase tracking-wider w-1 whitespace-nowrap',
     
-    body: {
-      tbody: 'bg-light divide-y divide-light-alt',
-      tr: 'hover:bg-light-alt border-b border-light-alt transition-colors duration-200',
-      td: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt',
-      tdLast: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt w-full',
-      tdActions: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt text-right'
-    },
+    // Body styles
+    tbody: 'bg-light divide-y divide-light-alt',
+    trBody: 'hover:bg-light-alt border-b border-light-alt transition-colors duration-200',
+    tdBase: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt',
+    tdLast: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt w-full',
+    tdActions: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt text-right',
     
-    states: {
-      loading: 'text-center py-8 text-dark',
-      noData: 'text-center py-8 text-dark'
-    }
-  };
-
-  const colorStyles = {
-    wrapper: 'flex items-center space-x-2',
-    swatch: 'w-6 h-6 border border-light-alt rounded flex-shrink-0',
-    text: 'font-mono text-sm text-dark-alt'
-  };
-
-  const layoutStyles = {
+    // State styles
+    loading: 'text-center py-8 text-dark',
+    noData: 'text-center py-8 text-dark',
+    
+    // Color display styles
+    colorWrapper: 'flex items-center space-x-2',
+    colorSwatch: 'w-6 h-6 border border-light-alt rounded flex-shrink-0',
+    colorText: 'font-mono text-sm text-dark-alt',
+    
+    // Layout styles
     buttonGroup: 'mb-4 flex justify-start',
-    actionButtons: 'flex items-center space-x-2'
+    actionButtons: 'flex items-center space-x-2',
+    headerButton: 'flex items-center justify-start w-full text-left cursor-pointer',
+    sortIcon: 'mr-2 text-sm'
   };
   
-  // Load data structure for table headers
-  async function loadDataStructure() {
+  // Unified data loading function
+  async function loadTableData(loadStructure = false) {
     if (!model) return;
     
-    const result = await API.getDataStructure(model.toLowerCase());
-    if (result.success && result.data?.columns) {
-      headers = result.data.columns.filter((column: string) => column !== 'id');
-    } else {
-      console.error('Error loading data structure:', result.error);
-      headers = [];
+    // Load data structure if needed
+    if (loadStructure) {
+      const structureResult = await API.getDataStructure(model.toLowerCase());
+      if (structureResult.success && structureResult.data?.columns) {
+        headers = structureResult.data.columns.filter((column: string) => column !== 'id');
+      } else {
+        console.error('Error loading data structure:', structureResult.error);
+        headers = [];
+      }
     }
-  }
-
-  // Load table data
-  async function loadData() {
-    if (!model) return;
     
+    // Load table data
     loading = true;
-    const result = await API.getAll(model as any, 0, 100, sortColumn || undefined, sortDirection);
+    const dataResult = await API.getAll(model as any, 0, 100, sortColumn || undefined, sortDirection);
     
-    if (result.success && result.data) {
-      data = result.data;
+    if (dataResult.success && dataResult.data) {
+      data = dataResult.data;
     } else {
-      console.error('Error loading data:', result.error);
+      console.error('Error loading data:', dataResult.error);
       data = [];
     }
     
     loading = false;
   }
 
-  // Handle successful data creation/update
-  function handleDataChanged() {
-    isModalActive = false; // Close modal
-    editData = null; // Clear edit data
-    loadData();
-  }
-
-  // Open modal with type and optional data
-  function openModal(type: 'create' | 'edit', data: any = null) {
-    modalType = type;
-    editData = data;
-    isModalActive = true;
+  // Consolidated modal management
+  function handleModal(action: 'open' | 'close', type?: 'create' | 'edit', data?: any) {
+    if (action === 'open') {
+      modalType = type!;
+      editData = data || null;
+      isModalActive = true;
+    } else {
+      isModalActive = false;
+      editData = null;
+      loadTableData();
+    }
   }
 
   // Handle delete action
@@ -111,7 +105,7 @@
     
     const result = await API.delete(model as any, row.id);
     if (result.success) {
-      loadData();
+      loadTableData();
     } else {
       console.error('Error deleting item:', result.error);
     }
@@ -120,17 +114,13 @@
   // Handle sorting toggle
   function toggleSort(column: string) {
     if (sortColumn === column) {
-      // Same column clicked - toggle direction
       sortDirection = sortDirection === 'ascending' ? 'descending' : 'ascending';
     } else {
-      // Different column clicked - set new column and default to ascending
       sortColumn = column;
       sortDirection = 'ascending';
     }
     
-    console.log('Sorting column:', column, 'Direction:', sortDirection);
-    // Reload data with new sorting
-    loadData();
+    loadTableData();
   }
   
   // Get sort icon for a column
@@ -144,8 +134,7 @@
   // Reactive effect to load data when model changes
   $effect(() => {
     if (model) {
-      loadDataStructure();
-      loadData();
+      loadTableData(true);
     }
   });
 </script>
@@ -153,45 +142,44 @@
 <div class={styles.wrapper}>
   <!-- Action Bar - only show in CRUD mode -->
   {#if mode === 'crud'}
-    <div class={layoutStyles.buttonGroup}>
+    <div class={styles.buttonGroup}>
       <Button 
         text="New Entry" 
         type="text" 
         theme="accent" 
-        onclick={() => openModal('create')} 
+        onclick={() => handleModal('open', 'create')} 
       />
     </div>
   {/if}
   
   {#if loading}
-    <div class={styles.states.loading}>
+    <div class={styles.loading}>
       Loading...
     </div>
   {:else if data.length === 0}
-    <div class={styles.states.noData}>
+    <div class={styles.noData}>
       No data available
     </div>
   {:else}
     <div class={styles.scrollWrapper}>
       <table class={styles.table}>
         <!-- Table Header -->
-        <thead class={styles.header.thead}>
-          <tr class={styles.header.tr}>
+        <thead class={styles.thead}>
+          <tr>
             {#each headers as header, index}
-              <th class={index === headers.length - 1 ? styles.header.thLast : styles.header.th}>
-                <div class="flex items-center justify-between">
-                  <span>{header.replace(/_/g, ' ')}</span>
-                  <button
-                    onclick={() => toggleSort(header)}
-                    class="ml-2 p-1 hover:bg-gray-200 rounded transition-colors"
-                  >
-                    <i class="{getSortIcon(header)} {sortColumn === header ? 'text-blue-600' : 'text-gray-500'} text-sm"></i>
-                  </button>
-                </div>
+              <th class={index === headers.length - 1 ? styles.thLast : styles.thBase}>
+                <button
+                  onclick={() => toggleSort(header)}
+                  class={styles.headerButton}
+                  aria-label="Sort by {header.replace(/_/g, ' ')}"
+                >
+                  <i class="{getSortIcon(header)} {sortColumn === header ? 'text-dark-alt' : 'text-dark'} {styles.sortIcon}"></i>
+                  <span class="uppercase">{header.replace(/_/g, ' ')}</span>
+                </button>
               </th>
             {/each}
             {#if mode === 'crud'}
-              <th class={styles.header.thActions}>
+              <th class={styles.thActions}>
                 Actions
               </th>
             {/if}
@@ -199,18 +187,18 @@
         </thead>
         
         <!-- Table Body -->
-        <tbody class={styles.body.tbody}>
+        <tbody class={styles.tbody}>
           {#each data as row (row.id)}
-            <tr class={styles.body.tr}>
+            <tr class={styles.trBody}>
               {#each headers as header, index}
-                <td class={index === headers.length - 1 ? styles.body.tdLast : styles.body.td}>
+                <td class={index === headers.length - 1 ? styles.tdLast : styles.tdBase}>
                   {#if header === 'color' && row[header]}
-                    <div class={colorStyles.wrapper}>
+                    <div class={styles.colorWrapper}>
                       <div 
-                        class={colorStyles.swatch}
+                        class={styles.colorSwatch}
                         style="background-color: {row[header]}"
                       ></div>
-                      <span class={colorStyles.text}>{row[header]}</span>
+                      <span class={styles.colorText}>{row[header]}</span>
                     </div>
                   {:else}
                     {row[header] ?? '-'}
@@ -218,13 +206,13 @@
                 </td>
               {/each}
               {#if mode === 'crud'}
-                <td class={styles.body.tdActions}>
-                  <div class={layoutStyles.actionButtons}>
+                <td class={styles.tdActions}>
+                  <div class={styles.actionButtons}>
                     <Button 
                       icon="bi bi-pencil-square"
                       type="icon"
                       theme="light" 
-                      onclick={() => openModal('edit', row)} 
+                      onclick={() => handleModal('open', 'edit', row)} 
                     />
                     <Button 
                       icon="bi bi-trash3"
@@ -249,7 +237,7 @@
       datamodel={model}
       type={modalType}
       editData={editData}
-      onSuccess={handleDataChanged}
+      onSuccess={() => handleModal('close')}
     />
   {/if}
 </div>
