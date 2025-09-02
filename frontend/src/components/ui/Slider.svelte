@@ -7,9 +7,10 @@
 		max: number;
 		step?: number;
 		hint?: string;
+		caption?: string;
 	}
 
-	let { id, title, value = $bindable(), min, max, step = 1, hint }: Props = $props();
+	let { id, title, value = $bindable(), min, max, step = 1, hint, caption = '' }: Props = $props();
 
 	function formatNumber(num: number): string {
 		return num.toLocaleString();
@@ -33,7 +34,11 @@
 				</div>
 			{/if}
 		</div>
-
+		
+		<!-- SLIDER CAPTION: Optional right-aligned text -->
+		{#if caption}
+			<span class="text-sm text-lightText">{caption}</span>
+		{/if}
 	</div>
 	<!-- SLIDER INPUT: Range input element styling -->
 	<input 

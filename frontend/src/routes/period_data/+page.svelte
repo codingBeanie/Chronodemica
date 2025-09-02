@@ -22,6 +22,8 @@
 	let previousPeriod = $state<Period | null>(null);
 	let previousData = $state<PeriodData | null>(null);
 	let unsavedChanges = $state(false);
+	let selectedPeriodYear = $state<String>(''); 
+	let selectedObjectName =$state<String>('');  
 
 	// Derived values
 	let periodOptionsArray = $derived(periods.map(p => ({ 
@@ -132,39 +134,44 @@
 		selectedObject = getFirstObjectId(currentObjects);
 	});
 
-	// Update previous period when selected period changes
+	// Combined: Previous period calculation + previous data fetch
 	$effect(() => {
-		previousPeriod = selectedPeriod && periods.length > 0 
+		const prevPeriod = selectedPeriod && periods.length > 0 
 			? findPreviousPeriod(selectedPeriod, periods) 
 			: null;
-	});
-
-	// Fetch current period data and reset unsaved changes
-	$effect(() => {
-		if (selectedPeriod && selectedObject) {
-			unsavedChanges = false;
-			fetchPeriodData(selectedDataModel, parseInt(selectedPeriod), parseInt(selectedObject))
-				.then(data => periodData = data);
-		}
-	});
-
-	// Fetch previous period data
-	$effect(() => {
-		if (previousPeriod && selectedObject) {
-			fetchPeriodData(selectedDataModel, previousPeriod.id!, parseInt(selectedObject))
+		
+		previousPeriod = prevPeriod;
+		
+		if (prevPeriod && selectedObject) {
+			fetchPeriodData(selectedDataModel, prevPeriod.id!, parseInt(selectedObject))
 				.then(data => previousData = data);
 		} else {
 			previousData = null;
 		}
 	});
+
+	// Combined: Current data fetch + display values update
+	$effect(() => {
+		if (selectedPeriod && selectedObject) {
+			unsavedChanges = false;
+			
+			// Fetch current period data
+			fetchPeriodData(selectedDataModel, parseInt(selectedPeriod), parseInt(selectedObject))
+				.then(data => periodData = data);
+			
+			// Update display values
+			selectedPeriodYear = periods.find(p => p.id?.toString() === selectedPeriod)?.year.toString() || '0';
+			selectedObjectName = currentObjects.find(obj => obj.id?.toString() === selectedObject)?.name || 'Unknown';
+		}
+	});
 </script>
 
 <ContentHeader title="Periodic Detail Data" />
-
-<Grid cols="1fr">
+	
+<Grid cols="1fr 5fr 2fr">
 	<!-- filter -->
-	<Container>
-		<Grid cols="2fr 1fr 2fr">
+	<Container title="Filter">
+		<Grid cols="1fr">
 			<!--Period Selection-->
 			<div>
 				<SegmentedControl 
@@ -191,17 +198,15 @@
 			</div>
 		</Grid>
 	</Container>
-</Grid>
-	
-<Grid cols="2fr 1fr">
+
 	<!-- parameters -->
-	<Container>
+	<Container title="({selectedPeriodYear}) {selectedObjectName}">
 		{#if periodData}
 			<ParameterEdit 
 				bind:data={periodData} 
 				bind:unsavedChanges={unsavedChanges}
-				objectName={currentObjects.find(obj => obj.id?.toString() === selectedObject)?.name || 'Unknown'}
-				periodYear={periods.find(p => p.id?.toString() === selectedPeriod)?.year || 0}
+				objectName={selectedObjectName}
+				periodYear={selectedPeriodYear}
 			/>
 		{:else}
 			<div class="text-center">

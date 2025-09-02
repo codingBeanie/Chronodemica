@@ -38,7 +38,7 @@
     
     body: {
       tbody: 'bg-light divide-y divide-light-alt',
-      tr: 'hover:bg-light-alt transition-colors duration-200',
+      tr: 'hover:bg-light-alt border-b border-light-alt transition-colors duration-200',
       td: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt',
       tdLast: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt w-full',
       tdActions: 'px-6 py-4 whitespace-nowrap text-sm text-dark-alt text-right'

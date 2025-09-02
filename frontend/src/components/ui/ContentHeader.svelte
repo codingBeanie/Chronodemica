@@ -6,8 +6,8 @@
 	let { title }: Props = $props();
 </script>
 
-<header class="p-8 my-3 mx-6">
+<header class="mb-2 mt-2 p-2">
 	<div class="">
-		<h1 class="text-2xl font-bold">{title}</h1>
+		<h1 class="text-xl font-thin">{title}</h1>
 	</div>
 </header>

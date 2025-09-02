@@ -19,9 +19,8 @@
 	title="Data Entry" 
 />
 
-<Grid cols="1fr">
-	<Column>
-		<Container>
+<Grid cols="1fr 7fr">
+		<Container title="Filter">
 			<div class="mb-16">
 				<SegmentedControl 
 					label="Select Data Type"
@@ -29,9 +28,10 @@
 					bind:selectedValue={selectedDataType}
 				/>
 			</div>
+		</Container>
+		<Container title="Data Table {selectedDataType}">
 			<div>
 				<Table model={selectedDataType} mode="crud" />
 			</div>
 		</Container>
-	</Column>
 </Grid>

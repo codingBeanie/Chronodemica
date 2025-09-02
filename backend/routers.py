@@ -8,6 +8,7 @@ from models import (
     PopVote, ElectionResult
 )
 import crud
+import statistics
 
 # Load environment variables
 load_dotenv()
@@ -324,3 +325,10 @@ def get_data_structure(model_name: str):
         "columns": list(fields.keys()),
         "fields": fields
     }
+
+
+# Statistics endpoints
+@router.get("/statistics/period/{period_id}/pop-size", response_model=Dict[str, Any])
+def get_period_pop_size_statistics(period_id: int, db: Session = Depends(get_session)):
+    """Get total pop_size statistics for a specific period."""
+    return statistics.get_pop_size_sum(db, period_id)

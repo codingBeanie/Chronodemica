@@ -21,7 +21,7 @@
 
 <div class="mb-6">
 	{#if label}
-		<h2 class="text-lg font-semibold mb-3">{label}</h2>
+		<h2 class="text-md font-thin mb-3">{label}</h2>
 	{/if}
 	<div class="flex flex-wrap border border-light-alt rounded-lg p-2 gap-2">
 		{#each displayOptions as {title, value}}

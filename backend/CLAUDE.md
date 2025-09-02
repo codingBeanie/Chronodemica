@@ -33,7 +33,7 @@ class PopPeriod(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     pop_id: int = Field(foreign_key="pop.id")
     period_id: int = Field(foreign_key="period.id")
-    population: int = Field(default=1000)
+    pop_size: int = Field(default=5)
     social_orientation: int = Field(default=0)
     economic_orientation: int = Field(default=0)
     max_political_distance: int = Field(default=70)

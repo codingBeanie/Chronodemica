@@ -5,10 +5,11 @@ export interface FieldMeta {
   description?: string;
   hint?: string;
   type: 'input' | 'slider';
+  showRatio?: boolean;
 }
 
 export interface PopPeriodFieldMeta {
-  population: FieldMeta;
+  pop_size: FieldMeta;
   social_orientation: FieldMeta;
   economic_orientation: FieldMeta;
   max_political_distance: FieldMeta;
@@ -25,12 +26,13 @@ export interface PartyPeriodFieldMeta {
 }
 
 export const POP_PERIOD_FIELD_META: PopPeriodFieldMeta = {
-  population: {
+  pop_size: {
     min: 0,
-    max: 100000000,
-    step: 1000,
-    hint: "Total number of people in this population group",
-    type: "input"
+    max: 100,
+    step: 1,
+    hint: "Relative population weight (system calculates percentages automatically)",
+    type: "slider",
+    showRatio: true
   },
   social_orientation: {
     min: -100,
@@ -76,8 +78,8 @@ export const POP_PERIOD_FIELD_META: PopPeriodFieldMeta = {
   },
   ratio_eligible: {
     min: 0,
-    max: 1,
-    step: 0.01,
+    max: 100,
+    step: 1,
     hint: "Percentage of population eligible to vote (as decimal)",
     type: "slider"
   }

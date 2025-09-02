@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PopPeriod, PartyPeriod } from '../../api/api';
-	import { API } from '../../api/api';
+	import { API, calculatePopulationRatio } from '../../api/api';
 	import Slider from '../ui/Slider.svelte';
 	import Input from '../inputs/Input.svelte';
 	import Grid from '../ui/Grid.svelte';
@@ -28,6 +28,7 @@
 
 	// Internal state
 	let originalData = $state<PeriodData | null>(null);
+	let popSizeCaption = $state<string>('');
 
 	// Computed values
 	let isPopPeriod = $derived('pop_id' in data);
@@ -60,6 +61,19 @@
 
 	$effect(() => {
 		unsavedChanges = originalData ? JSON.stringify(data) !== JSON.stringify(originalData) : false;
+	});
+
+	// Update population ratio caption for PopPeriod
+	$effect(() => {
+		if (isPopPeriod && data.period_id && data.id && typeof (data as PopPeriod).pop_size === 'number') {
+			calculatePopulationRatio((data as PopPeriod).pop_size, data.period_id, data.id!)
+				.then(ratio => {
+					popSizeCaption = ratio;
+				})
+				.catch(() => {
+					popSizeCaption = '';
+				});
+		}
 	});
 
 	function resetChangeTracking(): void {
@@ -111,26 +125,6 @@
 	const handleDelete = () => performApiAction('delete');
 </script>
 
-<!-- HEADER: Title, status and save button -->
-<Grid cols="1fr 1fr auto" gap="gap-4">
-	<div class="flex items-center">
-		<span class="text-2xl font-medium text-dark-text">
-			{objectName} {periodYear}
-		</span>
-	</div>
-	<div class="flex items-center">
-		{#if unsavedChanges}
-			<span class="text-lg text-accent font-medium">Unsaved changes detected. Don't forget to save.</span>
-		{/if}
-	</div>
-	<Button 
-		text="Save" 
-		theme="accent"
-		disabled={!unsavedChanges}
-		onclick={handleSave}
-	/>
-</Grid>
-
 <div class="mt-8">
 	<!-- PARAMETERS: Field controls -->
 	<Grid cols="1fr 1fr" gap="gap-4">
@@ -152,18 +146,28 @@
 				max={field.meta.max}
 				step={field.meta.step || 1}
 				hint={field.meta.hint}
+				caption={field.meta.showRatio ? popSizeCaption : undefined}
 			/>
 		{/if}
 	{/each}
 	</Grid>
 	
 	<!-- FOOTER: Delete button -->
-	<div class="flex justify-end mt-6">
+	<div class="flex justify-end items-center gap-4 mt-6">
+		{#if unsavedChanges}
+			<span class="text-lg text-accent font-medium">Unsaved changes detected. Don't forget to save.</span>
+		{/if}
 		<Button 
 			text="Delete" 
-			theme="failure"
+			theme="light"
 			disabled={!data.id}
 			onclick={handleDelete}
 		/>
+		<Button 
+		text="Save" 
+		theme="accent"
+		disabled={!unsavedChanges}
+		onclick={handleSave}
+	/>
 	</div>
 </div>
