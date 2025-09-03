@@ -9,6 +9,7 @@ from models import (
 )
 import crud
 import statistics
+from simulation import create_pop_votes, create_election_results, get_voting_behavior
 
 # Load environment variables
 load_dotenv()
@@ -332,3 +333,93 @@ def get_data_structure(model_name: str):
 def get_period_pop_size_statistics(period_id: int, db: Session = Depends(get_session)):
     """Get total pop_size statistics for a specific period."""
     return statistics.get_pop_size_sum(db, period_id)
+
+
+# Simulation endpoints
+@router.post("/simulation/period/{period_id}/pop-votes")
+def simulate_pop_votes(period_id: int, db: Session = Depends(get_session)):
+    """Generate voting behavior for all populations in a period."""
+    create_pop_votes(db, period_id)
+    return {"message": f"Pop votes created for period {period_id}"}
+
+
+@router.post("/simulation/period/{period_id}/election-results")
+def simulate_election_results(
+    period_id: int, 
+    seats: int = 100,
+    threshold: float = 5.0,
+    db: Session = Depends(get_session)
+):
+    """Generate election results and seat allocation for a period."""
+    create_election_results(db, period_id, seats, threshold)
+    return {
+        "message": f"Election results created for period {period_id}",
+        "seats": seats,
+        "threshold": threshold
+    }
+
+
+@router.post("/simulation/period/{period_id}/full-simulation")
+def run_full_simulation(
+    period_id: int,
+    seats: int = 100,
+    threshold: float = 5.0,
+    db: Session = Depends(get_session)
+):
+    """Run complete simulation: pop votes + election results."""
+    create_pop_votes(db, period_id)
+    create_election_results(db, period_id, seats, threshold)
+    return {
+        "message": f"Full simulation completed for period {period_id}",
+        "seats": seats,
+        "threshold": threshold
+    }
+
+
+@router.get("/simulation/period/{period_id}/pop/{pop_id}/voting-behavior", response_model=List[Dict[str, Any]])
+def get_pop_voting_behavior(
+    period_id: int, 
+    pop_id: int, 
+    db: Session = Depends(get_session)
+):
+    """Get detailed voting behavior for a specific population in a period."""
+    # Get the PopPeriod entry
+    pop_periods = crud.get_items(db, PopPeriod, filters={"period_id": period_id, "pop_id": pop_id})
+    if not pop_periods:
+        raise HTTPException(status_code=404, detail="PopPeriod not found")
+    
+    pop_period = pop_periods[0]
+    
+    # Convert to dict for compatibility
+    pop_period_dict = {
+        "pop_id": pop_period.pop_id,
+        "period_id": pop_period.period_id,
+        "social_orientation": pop_period.social_orientation,
+        "economic_orientation": pop_period.economic_orientation,
+        "max_political_distance": pop_period.max_political_distance,
+        "variety_tolerance": pop_period.variety_tolerance,
+        "non_voters_distance": pop_period.non_voters_distance,
+        "small_party_distance": pop_period.small_party_distance,
+        "ratio_eligible": pop_period.ratio_eligible,
+        "pop_size": pop_period.pop_size
+    }
+    
+    return get_voting_behavior(db, pop_period_dict)
+
+
+@router.get("/simulation/period/{period_id}/results", response_model=List[ElectionResult])
+def get_simulation_results(period_id: int, db: Session = Depends(get_session)):
+    """Get election results for a period."""
+    results = crud.get_items(db, ElectionResult, filters={"period_id": period_id})
+    if not results:
+        raise HTTPException(status_code=404, detail="No election results found for this period")
+    return results
+
+
+@router.get("/simulation/period/{period_id}/pop-votes", response_model=List[PopVote])
+def get_simulation_pop_votes(period_id: int, db: Session = Depends(get_session)):
+    """Get all pop votes for a period."""
+    votes = crud.get_items(db, PopVote, filters={"period_id": period_id})
+    if not votes:
+        raise HTTPException(status_code=404, detail="No pop votes found for this period")
+    return votes
