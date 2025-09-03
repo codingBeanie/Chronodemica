@@ -1,7 +1,7 @@
 <script lang="ts">
   import ModalData from './ModalData.svelte';
   import Button from './Button.svelte';
-  import { API } from '../../api/api';
+  import { API } from '../../lib/api/api';
   
   // Svelte 5 runes
   const { model, mode = 'crud' } = $props<{ 

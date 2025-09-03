@@ -2,7 +2,7 @@
   import Button from './Button.svelte';
   import Input from '../inputs/Input.svelte';
   import ColorPicker from '../inputs/ColorPicker.svelte';
-  import { API } from '../../api/api';
+  import { API } from '../../lib/api/api';
   
   interface Props {
     active: boolean;

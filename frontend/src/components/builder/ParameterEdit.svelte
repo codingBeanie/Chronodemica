@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { PopPeriod, PartyPeriod } from '../../api/api';
-	import { API, calculatePopulationRatio } from '../../api/api';
+	import type { PopPeriod, PartyPeriod } from '../../lib/api/api';
+	import { API, calculatePopulationRatio } from '../../lib/api/api';
 	import Slider from '../ui/Slider.svelte';
 	import Input from '../inputs/Input.svelte';
 	import Grid from '../ui/Grid.svelte';

@@ -4,7 +4,7 @@
 	import SegmentedControl from '../../components/ui/SegmentedControl.svelte';
 	import Button from '../../components/ui/Button.svelte';
 	import ParameterEdit from '../../components/builder/ParameterEdit.svelte';
-	import { API, type Period, type Pop, type Party, type PopPeriod, type PartyPeriod } from '../../api/api';
+	import { API, type Period, type Pop, type Party, type PopPeriod, type PartyPeriod } from '../../lib/api/api';
 	import { onMount } from 'svelte';
 
 	type DataModel = 'Population' | 'Party';
