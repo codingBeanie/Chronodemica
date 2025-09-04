@@ -39,6 +39,7 @@
 			.filter(key => data.hasOwnProperty(key))
 			.map(key => ({ key, meta: getFieldMeta(key, dataModelType)! }))
 	);
+	let saveDisabled = $derived(!unsavedChanges);
 
 	// Utility functions
 	function formatFieldName(key: string): string {
@@ -166,7 +167,7 @@
 		<Button 
 		text="Save" 
 		theme="accent"
-		disabled={!unsavedChanges}
+		disabled={saveDisabled}
 		onclick={handleSave}
 	/>
 	</div>

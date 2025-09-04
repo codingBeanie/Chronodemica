@@ -289,32 +289,32 @@
 		</Container>
 		
 		<!-- preview voting -->
+		{#if selectedDataModel === 'Population'}
 		<Container title="Preview Voting Behavior">
-			{#if selectedDataModel === 'Population' && votingBehavior.length > 0}
+			{#if votingBehavior.length > 0}
 				<Table 
 					mode="simple"
 					externalData={votingBehavior}
 					externalHeaders={votingBehaviorHeaders}
 				/>
-			{:else if selectedDataModel === 'Population'}
-				<p class="text-sm text-lightText">No voting behavior data available</p>
 			{:else}
-				<p class="text-sm text-lightText">Voting behavior only available for Population data</p>
+				<p class="text-sm text-lightText">No voting behavior data available</p>
 			{/if}
 		</Container>
+		{/if}
 	</Column>
 
 	
+	{#if selectedDataModel === 'Population'}
 	<div class="flex flex-col gap-4">
 		<!-- political compass -->
 		<Container title="Political Compass">
 			{#if selectedPeriod}
-				<PoliticalCompass period={parseInt(selectedPeriod)} />
+				<PoliticalCompass period={parseInt(selectedPeriod)} refreshTrigger={refreshTrigger} />
 			{:else}
 				<p class="text-sm text-dark-alt">Please select a period to view the political compass</p>
 			{/if}
 		</Container>
-		
-
 	</div>
+	{/if}
 </Grid>

@@ -2,7 +2,7 @@
   import { browser } from '$app/environment';
   import { getPartyOrientations, getPopOrientations } from '../../lib/api/plotting';
 
-  const { period } = $props<{ period: number }>();
+  const { period, refreshTrigger } = $props<{ period: number; refreshTrigger?: number }>();
 
   let plotDiv: HTMLDivElement;
   let loading = $state(false);
@@ -167,6 +167,8 @@
   }
 
   $effect(() => {
+    // React to period or refreshTrigger changes
+    refreshTrigger; // Make the effect reactive to refreshTrigger changes
     renderPlot();
   });
 </script>
