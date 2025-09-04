@@ -1,10 +1,12 @@
 <script lang="ts">
 	import Grid from '../../components/ui/Grid.svelte';
 	import Container from '../../components/ui/Container.svelte';
+	import Column from '../../components/ui/Column.svelte';
 	import SegmentedControl from '../../components/ui/SegmentedControl.svelte';
 	import Button from '../../components/ui/Button.svelte';
 	import ParameterEdit from '../../components/builder/ParameterEdit.svelte';
-	import { API, type Period, type Pop, type Party, type PopPeriod, type PartyPeriod } from '../../lib/api/api';
+	import Table from '../../components/ui/Table.svelte';
+	import { API, type Period, type Pop, type Party, type PopPeriod, type PartyPeriod, getVotingBehavior, type VotingBehavior } from '../../lib/api/api';
 	import { onMount } from 'svelte';
 
 	type DataModel = 'Population' | 'Party';
@@ -22,7 +24,20 @@
 	let previousData = $state<PeriodData | null>(null);
 	let unsavedChanges = $state(false);
 	let selectedPeriodYear = $state<string>(''); 
-	let selectedObjectName = $state<string>('');  
+	let selectedObjectName = $state<string>('');
+	let votingBehavior = $state<VotingBehavior[]>([]);
+	let refreshTrigger = $state<number>(0);
+	
+	// Define headers for voting behavior table (filtered data - no IDs and votes)
+	let votingBehaviorHeaders = $state<string[]>([
+		'party_name', 
+		'party_full_name',
+		'distance', 
+		'raw_score', 
+		'strength', 
+		'adjusted_score', 
+		'percentage'
+	]);  
 
 	// Derived values
 	let periodOptionsArray = $derived(periods.map(p => ({ 
@@ -110,6 +125,14 @@
 		}
 	}
 
+	// Handle save action from ParameterEdit component
+	function handleParameterSave(action: string, success: boolean) {
+		if (action === 'save' && success) {
+			// Trigger voting behavior refresh by incrementing counter
+			refreshTrigger++;
+		}
+	}
+
 	// Load initial data
 	onMount(async () => {
 		const [periodResult, popResult, partyResult] = await Promise.all([
@@ -165,6 +188,25 @@
 			selectedObjectName = currentObjects.find(obj => obj.id?.toString() === selectedObject)?.name || 'Unknown';
 		}
 	});
+
+	// Fetch voting behavior data for Population model - reactive to refresh trigger
+	$effect(() => {
+		if (selectedPeriod && selectedObject && selectedDataModel === 'Population') {
+			// Depend on refreshTrigger to force re-execution after saves
+			refreshTrigger; // This makes the effect reactive to refreshTrigger changes
+			
+			getVotingBehavior(parseInt(selectedPeriod), parseInt(selectedObject))
+				.then(result => {
+					if (result.success && result.data) {
+						votingBehavior = result.data;
+					} else {
+						votingBehavior = [];
+					}
+				});
+		} else {
+			votingBehavior = [];
+		}
+	});
 </script>
 
 	
@@ -200,33 +242,52 @@
 	</Container>
 
 	<!-- parameters -->
-	<Container title="({selectedPeriodYear}) {selectedObjectName}">
-		{#if periodData}
-			<ParameterEdit 
-				bind:data={periodData} 
-				bind:unsavedChanges={unsavedChanges}
-				objectName={selectedObjectName}
-				periodYear={parseInt(selectedPeriodYear) || 0}
-			/>
-		{:else}
-			<div class="text-center">
-				<p class="text-dark mb-4">No data found for the selected combination. Please select a creation method.</p>
-				<div class="flex gap-4 justify-center">
-					<Button 
-						text="Create Empty" 
-						theme="light"
-						onclick={() => handleCreatePeriodData(false)}
-					/>
-					<Button 
-						text="Create from Previous" 
-						theme="light"
-						disabled={previousData === null}
-						onclick={() => handleCreatePeriodData(true)}
-					/>
+	<Column>
+		<Container title="({selectedPeriodYear}) {selectedObjectName}">
+			{#if periodData}
+				<ParameterEdit 
+					bind:data={periodData} 
+					bind:unsavedChanges={unsavedChanges}
+					objectName={selectedObjectName}
+					periodYear={parseInt(selectedPeriodYear) || 0}
+					onAction={handleParameterSave}
+				/>
+			{:else}
+				<div class="text-center">
+					<p class="text-dark mb-4">No data found for the selected combination. Please select a creation method.</p>
+					<div class="flex gap-4 justify-center">
+						<Button 
+							text="Create Empty" 
+							theme="light"
+							onclick={() => handleCreatePeriodData(false)}
+						/>
+						<Button 
+							text="Create from Previous" 
+							theme="light"
+							disabled={previousData === null}
+							onclick={() => handleCreatePeriodData(true)}
+						/>
+					</div>
 				</div>
-			</div>
-		{/if}
-	</Container>
+			{/if}
+		</Container>
+		
+		<!-- preview voting -->
+		<Container title="Preview Voting Behavior">
+			{#if selectedDataModel === 'Population' && votingBehavior.length > 0}
+				<Table 
+					mode="simple"
+					externalData={votingBehavior}
+					externalHeaders={votingBehaviorHeaders}
+				/>
+			{:else if selectedDataModel === 'Population'}
+				<p class="text-sm text-lightText">No voting behavior data available</p>
+			{:else}
+				<p class="text-sm text-lightText">Voting behavior only available for Population data</p>
+			{/if}
+		</Container>
+	</Column>
+
 	
 	<div class="flex flex-col gap-4">
 		<!-- political compass -->
@@ -234,9 +295,6 @@
 			<p class="text-sm text-lightText">Political compass visualization placeholder</p>
 		</Container>
 		
-		<!-- preview voting -->
-		<Container>
-			<p class="text-sm text-lightText">Preview voting visualization placeholder</p>
-		</Container>
+
 	</div>
 </Grid>

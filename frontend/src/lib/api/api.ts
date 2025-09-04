@@ -272,3 +272,40 @@ export async function calculatePopulationRatio(popSize: number, periodId: number
     return '';
   }
 }
+
+// Voting behavior interface (filtered - without ID columns and votes)
+export interface VotingBehavior {
+  pop_name: string;
+  party_name: string;
+  party_full_name: string;
+  distance: number;
+  raw_score: number;
+  strength: number;
+  adjusted_score: number;
+  percentage: number;
+}
+
+// Get voting behavior for a specific population in a period
+export async function getVotingBehavior(periodId: number, popId: number): Promise<ApiResponse<VotingBehavior[]>> {
+  const result = await request<any[]>(`/simulation/period/${periodId}/pop/${popId}/voting-behavior`);
+  
+  if (result.success && result.data) {
+    // Filter out ID columns and votes column from each entry
+    const filteredData = result.data.map((entry: any) => {
+      const { pop_id, period_id, party_id, votes, ...filteredEntry } = entry;
+      return filteredEntry;
+    });
+    
+    // Sort by percentage in descending order (highest first)
+    const sortedData = filteredData.sort((a: any, b: any) => {
+      return (b.percentage || 0) - (a.percentage || 0);
+    });
+    
+    return {
+      success: true,
+      data: sortedData as VotingBehavior[]
+    };
+  }
+  
+  return result as ApiResponse<VotingBehavior[]>;
+}
