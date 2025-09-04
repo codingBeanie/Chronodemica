@@ -8,12 +8,21 @@
   let loading = $state(false);
   let Plotly: any = null;
 
-  // Static theme colors - simpler and more reliable
-  const COLORS = {
-    accent: '#3182ce',
-    dark: '#2d3748',
-    light: '#f8f9fa'
-  };
+  // Get theme colors from CSS custom properties
+  function getThemeColors() {
+    const root = document.documentElement;
+    const getColor = (varName: string) => getComputedStyle(root).getPropertyValue(varName).trim();
+    
+    return {
+      accent: getColor('--accent'),
+      dark: getColor('--dark'),
+      darkAlt: getColor('--dark-alt'),
+      light: getColor('--light'),
+      lightAlt: getColor('--light-alt'),
+      success: getColor('--success'),
+      failure: getColor('--failure')
+    };
+  }
 
   async function initPlotly() {
     if (!Plotly && browser) {
@@ -48,6 +57,8 @@
       return;
     }
 
+    // Get current theme colors
+    const colors = getThemeColors();
     const traces = [];
     
     // Add party trace if data exists
@@ -60,8 +71,8 @@
         type: 'scatter',
         mode: 'markers',
         marker: { 
-          color: COLORS.accent,
-          size: partyData.size.map(s => Math.max(s * 1, 8)),
+          color: partyData.colors && partyData.colors.length > 0 ? partyData.colors : colors.accent,
+          size: partyData.size,
           symbol: 'circle'
         }
       });
@@ -77,8 +88,8 @@
         type: 'scatter',
         mode: 'markers',
         marker: { 
-          color: COLORS.dark,
-          size: popData.size.map(s => Math.max(s / 1, 8)),
+          color: colors.dark,
+          size: popData.size,
           symbol: 'diamond'
         }
       });
@@ -86,15 +97,13 @@
 
     const layout = {
       xaxis: { 
-        title: 'Economic Orientation',
-        range: [-100, 100],
-        showticklabels: true,
+        range: [-120, 120],
+        showticklabels: false,
         zeroline: true
       },
       yaxis: { 
-        title: 'Social Orientation',
-        range: [-100, 100],
-        showticklabels: true,
+        range: [-120, 120],
+        showticklabels: false,
         zeroline: true
       },
       showlegend: true,
@@ -105,10 +114,48 @@
         y: 1.02,
         yanchor: 'bottom'
       },
-      margin: { t: 0, l: 0, r: 0, b: 0 },
-      paper_bgcolor: COLORS.light,
-      plot_bgcolor: COLORS.light,
-      font: { color: COLORS.dark, size: 12 }
+      annotations: [
+        {
+          x: -100,
+          y: 120,
+          text: 'Collectivist<br>Authoritarian',
+          showarrow: false,
+          font: { size: 10, color: colors.dark },
+          xanchor: 'center',
+          yanchor: 'middle'
+        },
+        {
+          x: 100,
+          y: 120,
+          text: 'Market<br>Authoritarian',
+          showarrow: false,
+          font: { size: 10, color: colors.dark },
+          xanchor: 'center',
+          yanchor: 'middle'
+        },
+        {
+          x: -100,
+          y: -110,
+          text: 'Collectivist<br>Libertarian',
+          showarrow: false,
+          font: { size: 10, color: colors.dark },
+          xanchor: 'center',
+          yanchor: 'middle'
+        },
+        {
+          x: 100,
+          y: -110,
+          text: 'Market<br>Libertarian',
+          showarrow: false,
+          font: { size: 10, color: colors.dark },
+          xanchor: 'center',
+          yanchor: 'middle'
+        }
+      ],
+      margin: { t: 10, l: 10, r: 10, b: 10 },
+      paper_bgcolor: colors.light,
+      plot_bgcolor: colors.light,
+      font: { color: colors.dark, size: 12 }
     };
 
     plotlyModule.newPlot(plotDiv, traces, layout, { 
