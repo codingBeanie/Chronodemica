@@ -6,6 +6,7 @@
 	import Button from '../../components/ui/Button.svelte';
 	import ParameterEdit from '../../components/builder/ParameterEdit.svelte';
 	import Table from '../../components/ui/Table.svelte';
+	import PoliticalCompass from '../../components/plots/PoliticalCompass.svelte';
 	import { API, type Period, type Pop, type Party, type PopPeriod, type PartyPeriod, getVotingBehavior, type VotingBehavior } from '../../lib/api/api';
 	import { onMount } from 'svelte';
 
@@ -191,18 +192,33 @@
 
 	// Fetch voting behavior data for Population model - reactive to refresh trigger
 	$effect(() => {
-		if (selectedPeriod && selectedObject && selectedDataModel === 'Population') {
-			// Depend on refreshTrigger to force re-execution after saves
-			refreshTrigger; // This makes the effect reactive to refreshTrigger changes
+		if (selectedPeriod && selectedObject && selectedDataModel === 'Population' && periodData) {
+			const periodId = parseInt(selectedPeriod);
+			const objectId = parseInt(selectedObject);
 			
-			getVotingBehavior(parseInt(selectedPeriod), parseInt(selectedObject))
-				.then(result => {
-					if (result.success && result.data) {
-						votingBehavior = result.data;
-					} else {
+			// Only fetch voting behavior if PopPeriod data exists and IDs are valid
+			if (!isNaN(periodId) && !isNaN(objectId) && periodId > 0 && objectId > 0) {
+				// Depend on refreshTrigger to force re-execution after saves
+				refreshTrigger; // This makes the effect reactive to refreshTrigger changes
+				
+				console.log('Fetching voting behavior for period:', periodId, 'pop:', objectId);
+				
+				getVotingBehavior(periodId, objectId)
+					.then(result => {
+						if (result.success && result.data) {
+							votingBehavior = result.data;
+						} else {
+							console.warn('No voting behavior data:', result.error);
+							votingBehavior = [];
+						}
+					})
+					.catch(error => {
+						console.error('Error fetching voting behavior:', error);
 						votingBehavior = [];
-					}
-				});
+					});
+			} else {
+				votingBehavior = [];
+			}
 		} else {
 			votingBehavior = [];
 		}
@@ -291,8 +307,12 @@
 	
 	<div class="flex flex-col gap-4">
 		<!-- political compass -->
-		<Container>
-			<p class="text-sm text-lightText">Political compass visualization placeholder</p>
+		<Container title="Political Compass">
+			{#if selectedPeriod}
+				<PoliticalCompass period={parseInt(selectedPeriod)} />
+			{:else}
+				<p class="text-sm text-dark-alt">Please select a period to view the political compass</p>
+			{/if}
 		</Container>
 		
 
