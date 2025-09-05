@@ -7,7 +7,8 @@
 	import ParameterEdit from '../../components/builder/ParameterEdit.svelte';
 	import Table from '../../components/ui/Table.svelte';
 	import PoliticalCompass from '../../components/plots/PoliticalCompass.svelte';
-	import { API, type Period, type Pop, type Party, type PopPeriod, type PartyPeriod, getVotingBehavior, type VotingBehavior } from '../../lib/api/api';
+	import { API, type Period, type Pop, type Party, type PopPeriod, type PartyPeriod, type VotingBehavior } from '../../lib/api/core';
+	import { getVotingBehavior } from '../../lib/api/data_services/simulation';
 	import { onMount } from 'svelte';
 
 	type DataModel = 'Population' | 'Party';
@@ -293,6 +294,7 @@
 		<Container title="Preview Voting Behavior">
 			{#if votingBehavior.length > 0}
 				<Table 
+					model=""
 					mode="simple"
 					externalData={votingBehavior}
 					externalHeaders={votingBehaviorHeaders}

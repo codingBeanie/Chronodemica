@@ -1,7 +1,7 @@
 <script lang="ts">
   import ModalData from './ModalData.svelte';
   import Button from './Button.svelte';
-  import { API } from '../../lib/api/api';
+  import { API } from '../../lib/api/core';
   
   // Types
   interface TableProps {
@@ -20,7 +20,7 @@
     mode = 'crud',
     externalData = [],
     externalHeaders = []
-  } = $props<TableProps>();
+  } = $props();
   
   // Component state
   let data = $state<any[]>([]);

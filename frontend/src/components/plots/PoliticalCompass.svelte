@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { getPartyOrientations, getPopOrientations } from '../../lib/api/plotting';
+  import { getPartyOrientations, getPopOrientations } from '../../lib/api/data_services/plotting';
 
   interface PlotData {
     x: number[];

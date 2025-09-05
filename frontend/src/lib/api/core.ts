@@ -166,6 +166,15 @@ export const API = {
     return request(`/data-structure/${model.toLowerCase()}`, {
       method: 'GET',
     });
+  },
+
+  // Raw endpoint calls for statistics and simulation
+  async getStatistics(endpoint: string): Promise<ApiResponse<any>> {
+    return request(`/statistics/${endpoint}`);
+  },
+
+  async getSimulation(endpoint: string): Promise<ApiResponse<any>> {
+    return request(`/simulation/${endpoint}`);
   }
 };
 
@@ -230,49 +239,6 @@ export interface ElectionResult {
   head_of_government?: boolean;
 }
 
-// Population ratio calculation with auto-save
-export async function calculatePopulationRatio(popSize: number, periodId: number, popPeriodId: number): Promise<string> {
-  try {
-    // Handle edge case where popSize is 0
-    if (popSize === 0) {
-      return 'Ratio: 0%';
-    }
-
-    // First: Auto-save the pop_size value to database
-    const updateResult = await API.update('PopPeriod', popPeriodId, { pop_size: popSize });
-    
-    if (!updateResult.success) {
-      console.warn('Failed to auto-save pop_size:', updateResult.error);
-      return '';
-    }
-
-    // Then: Query the statistics API for updated total pop_size
-    const statsResult = await request<{period_id: number, total_pop_size: number}>(`/statistics/period/${periodId}/pop-size`);
-    
-    if (!statsResult.success || !statsResult.data) {
-      console.warn('Failed to fetch population statistics:', statsResult.error);
-      return '';
-    }
-
-    const totalPopSize = statsResult.data.total_pop_size;
-    
-    // Handle division by zero
-    if (totalPopSize === 0) {
-      return 'Ratio: 0%';
-    }
-
-    // Calculate ratio as percentage
-    const ratio = (popSize / totalPopSize) * 100;
-    const roundedRatio = Math.round(ratio * 10) / 10; // Round to 1 decimal place
-    
-    return `Ratio: ${roundedRatio}%`;
-    
-  } catch (error) {
-    console.warn('Error calculating population ratio:', error);
-    return '';
-  }
-}
-
 // Voting behavior interface (filtered - without ID columns and votes)
 export interface VotingBehavior {
   pop_name: string;
@@ -283,29 +249,4 @@ export interface VotingBehavior {
   strength: number;
   adjusted_score: number;
   percentage: number;
-}
-
-// Get voting behavior for a specific population in a period
-export async function getVotingBehavior(periodId: number, popId: number): Promise<ApiResponse<VotingBehavior[]>> {
-  const result = await request<any[]>(`/simulation/period/${periodId}/pop/${popId}/voting-behavior`);
-  
-  if (result.success && result.data) {
-    // Filter out ID columns and votes column from each entry
-    const filteredData = result.data.map((entry: any) => {
-      const { pop_id, period_id, party_id, votes, ...filteredEntry } = entry;
-      return filteredEntry;
-    });
-    
-    // Sort by percentage in descending order (highest first)
-    const sortedData = filteredData.sort((a: any, b: any) => {
-      return (b.percentage || 0) - (a.percentage || 0);
-    });
-    
-    return {
-      success: true,
-      data: sortedData as VotingBehavior[]
-    };
-  }
-  
-  return result as ApiResponse<VotingBehavior[]>;
 }

@@ -1,4 +1,4 @@
-import { API, type PopPeriod, type PartyPeriod, type Pop, type Party } from './api';
+import { API, type PopPeriod, type PartyPeriod, type Pop, type Party } from '../core';
 
 const SCALING_CONFIG = {
   PARTY_BASE_SIZE: 8,

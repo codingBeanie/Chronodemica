@@ -1,6 +1,7 @@
 <script lang="ts">
-	import type { PopPeriod, PartyPeriod } from '../../lib/api/api';
-	import { API, calculatePopulationRatio } from '../../lib/api/api';
+	import type { PopPeriod, PartyPeriod } from '../../lib/api/core';
+	import { API } from '../../lib/api/core';
+	import { calculatePopulationRatio } from '../../lib/api/data_services/statistics';
 	import Slider from '../ui/Slider.svelte';
 	import Input from '../inputs/Input.svelte';
 	import Grid from '../ui/Grid.svelte';
@@ -67,7 +68,7 @@
 	// Update population ratio caption for PopPeriod
 	$effect(() => {
 		if (isPopPeriod && data.period_id && data.id && typeof (data as PopPeriod).pop_size === 'number') {
-			calculatePopulationRatio((data as PopPeriod).pop_size, data.period_id, data.id!)
+			calculatePopulationRatio((data as PopPeriod).pop_size!, data.period_id, data.id!)
 				.then(ratio => {
 					popSizeCaption = ratio;
 				})
