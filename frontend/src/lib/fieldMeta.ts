@@ -6,6 +6,7 @@ export interface FieldMeta {
   hint?: string;
   type: 'input' | 'slider';
   showRatio?: boolean;
+  defaultValue?: number;
 }
 
 export interface PopPeriodFieldMeta {
@@ -23,6 +24,11 @@ export interface PartyPeriodFieldMeta {
   social_orientation: FieldMeta;
   economic_orientation: FieldMeta;
   political_strength: FieldMeta;
+}
+
+export interface ElectionFieldMeta {
+  seats: FieldMeta;
+  threshold: FieldMeta;
 }
 
 export const POP_PERIOD_FIELD_META: PopPeriodFieldMeta = {
@@ -106,6 +112,25 @@ export const PARTY_PERIOD_FIELD_META: PartyPeriodFieldMeta = {
     step: 1,
     hint: "Overall political influence and campaign effectiveness",
     type: "slider"
+  }
+};
+
+export const ELECTION_FIELD_META: ElectionFieldMeta = {
+  seats: {
+    min: 10,
+    max: 1000,
+    step: 1,
+    hint: "Total number of seats in parliament",
+    type: "input",
+    defaultValue: 100
+  },
+  threshold: {
+    min: 0,
+    max: 100,
+    step: 1,
+    hint: "Minimum percentage required to enter parliament",
+    type: "input",
+    defaultValue: 5
   }
 };
 

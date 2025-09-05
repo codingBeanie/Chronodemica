@@ -24,6 +24,11 @@
 				icon="table"
 				text="Period Data"
 			/>
+			<NavLink 
+				href="/election" 
+				icon="bar-chart-fill"
+				text="Election"
+			/>
 		</div>
 		
 		<!-- Version Info -->

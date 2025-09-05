@@ -175,6 +175,13 @@ export const API = {
 
   async getSimulation(endpoint: string): Promise<ApiResponse<any>> {
     return request(`/simulation/${endpoint}`);
+  },
+
+  async postSimulation(endpoint: string, data?: any): Promise<ApiResponse<any>> {
+    return request(`/simulation/${endpoint}`, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined
+    });
   }
 };
 

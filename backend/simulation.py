@@ -11,7 +11,7 @@ def get_distance(pop_period: Dict[str, Any], party_period: Dict[str, Any]) -> in
     pop_economic = pop_period["economic_orientation"]
     party_social = party_period["social_orientation"]
     party_economic = party_period["economic_orientation"]
-    
+
     # calculate distance
     distance_ratio = calculate_distance(
         pop_social, pop_economic, party_social, party_economic, ratio=True
@@ -19,7 +19,9 @@ def get_distance(pop_period: Dict[str, Any], party_period: Dict[str, Any]) -> in
     return distance_ratio
 
 
-def calculate_distance(social_1: int, economic_1: int, social_2: int, economic_2: int, ratio: bool = True) -> float:
+def calculate_distance(
+    social_1: int, economic_1: int, social_2: int, economic_2: int, ratio: bool = True
+) -> float:
     # calculate distance
     distance = np.sqrt((social_1 - social_2) ** 2 + (economic_1 - economic_2) ** 2)
     if not ratio:
@@ -59,7 +61,9 @@ def calculate_adjusted_score(party_period: Dict[str, Any], score: int) -> int:
     return adjusted_score
 
 
-def get_voting_behavior(db: Session, pop_period: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_voting_behavior(
+    db: Session, pop_period: Dict[str, Any]
+) -> List[Dict[str, Any]]:
     # extract parameters
     pop_id = pop_period["pop_id"]
     period_id = pop_period["period_id"]
@@ -68,7 +72,7 @@ def get_voting_behavior(db: Session, pop_period: Dict[str, Any]) -> List[Dict[st
     pop = get_item(db, Pop, pop_id)
     period = get_item(db, Period, period_id)
     party_periods = get_items(db, PartyPeriod, filters={"period_id": period_id})
-    
+
     if not pop or not period:
         raise HTTPException(status_code=404, detail="Pop or Period not found")
 
@@ -76,7 +80,7 @@ def get_voting_behavior(db: Session, pop_period: Dict[str, Any]) -> List[Dict[st
     pop_name = pop.name
     pop_population = pop_period["pop_size"]
     ratio_eligible = pop_period["ratio_eligible"]
-    eligible_population = int((pop_population * ratio_eligible) / 100)
+    eligible_population = int((pop_population * ratio_eligible) / 100) * 1000
 
     # create return data structure
     voting_behavior = []
@@ -91,9 +95,9 @@ def get_voting_behavior(db: Session, pop_period: Dict[str, Any]) -> List[Dict[st
         party_period_dict = {
             "social_orientation": party_period.social_orientation,
             "economic_orientation": party_period.economic_orientation,
-            "political_strength": party_period.political_strength
+            "political_strength": party_period.political_strength,
         }
-        
+
         distance = get_distance(pop_period, party_period_dict)
         raw_score = calculate_score(pop_period, distance)
         adjusted_score = calculate_adjusted_score(party_period_dict, raw_score)
@@ -164,7 +168,10 @@ def create_pop_votes(db: Session, period_id: int) -> None:
     # get popperiod for voting behavior
     pop_periods = get_items(db, PopPeriod, filters={"period_id": period_id})
     if not pop_periods:
-        raise HTTPException(status_code=404, detail="No population data available for the selected period")
+        raise HTTPException(
+            status_code=404,
+            detail="No population data available for the selected period",
+        )
 
     # get voting behavior for each pop
     for pop_period in pop_periods:
@@ -179,30 +186,31 @@ def create_pop_votes(db: Session, period_id: int) -> None:
             "non_voters_distance": pop_period.non_voters_distance,
             "small_party_distance": pop_period.small_party_distance,
             "ratio_eligible": pop_period.ratio_eligible,
-            "pop_size": pop_period.pop_size
+            "pop_size": pop_period.pop_size,
         }
-        
+
         voting_behavior = get_voting_behavior(db, pop_period_dict)
-        
+
         # for each party, create a new entry in PopVote
         for entry in voting_behavior:
             # check if entry already exists
             existing_entries = get_items(
-                db, PopVote,
+                db,
+                PopVote,
                 filters={
                     "period_id": period_id,
                     "pop_id": pop_period.pop_id,
                     "party_id": entry["party_id"],
-                }
+                },
             )
-            
+
             vote_data = {
                 "period_id": period_id,
                 "pop_id": pop_period.pop_id,
                 "party_id": entry["party_id"],
                 "votes": entry["votes"],
             }
-            
+
             if existing_entries:
                 # updating entry
                 existing_entry = existing_entries[0]
@@ -213,11 +221,16 @@ def create_pop_votes(db: Session, period_id: int) -> None:
                 create_item(db, new_vote)
 
 
-def create_election_results(db: Session, period_id: int, seats: int, threshold: float) -> None:
+def create_election_results(
+    db: Session, period_id: int, seats: int, threshold: float
+) -> None:
     # get popvotes for voting behavior
     pop_votes = get_items(db, PopVote, filters={"period_id": period_id})
     if not pop_votes:
-        raise HTTPException(status_code=404, detail="No population voting data available for the selected period")
+        raise HTTPException(
+            status_code=404,
+            detail="No population voting data available for the selected period",
+        )
 
     # get sum of all votes
     sum_votes = sum(vote.votes for vote in pop_votes)
@@ -230,9 +243,7 @@ def create_election_results(db: Session, period_id: int, seats: int, threshold: 
     # for each party, create data dict
     for party_id in participating_parties:
         # get votes for party
-        party_votes = sum(
-            vote.votes for vote in pop_votes if vote.party_id == party_id
-        )
+        party_votes = sum(vote.votes for vote in pop_votes if vote.party_id == party_id)
         # calculate percentage
         percentage = (party_votes / sum_votes * 100) if sum_votes > 0 else 0.0
 
@@ -254,10 +265,9 @@ def create_election_results(db: Session, period_id: int, seats: int, threshold: 
 
         # check if entry already exists
         existing_entries = get_items(
-            db, ElectionResult,
-            filters={"period_id": period_id, "party_id": party_id}
+            db, ElectionResult, filters={"period_id": period_id, "party_id": party_id}
         )
-        
+
         if existing_entries:
             # if exists, update entry
             existing_entry = existing_entries[0]
@@ -266,7 +276,7 @@ def create_election_results(db: Session, period_id: int, seats: int, threshold: 
             # if not exists, create new entry
             new_result = ElectionResult(**result_data)
             create_item(db, new_result)
-            
+
     calculate_seats(db, period_id, seats)
 
 
@@ -274,12 +284,17 @@ def calculate_seats(db: Session, period_id: int, seats: int) -> None:
     # get election results
     election_results = get_items(db, ElectionResult, filters={"period_id": period_id})
     if not election_results:
-        raise HTTPException(status_code=404, detail="No election results available for the selected period")
+        raise HTTPException(
+            status_code=404,
+            detail="No election results available for the selected period",
+        )
 
     # filter for parties in parliament
     parliament = [result for result in election_results if result.in_parliament]
     if not parliament:
-        raise HTTPException(status_code=404, detail="No parties in parliament for the selected period")
+        raise HTTPException(
+            status_code=404, detail="No parties in parliament for the selected period"
+        )
 
     # calculate total votes in parliament
     total_votes = sum(result.votes for result in parliament)
@@ -293,11 +308,11 @@ def calculate_seats(db: Session, period_id: int, seats: int) -> None:
         exact_no_seats = relative_votes * seats
         min_seats = int(exact_no_seats)
         residual_seats = exact_no_seats - min_seats
-        
+
         party_data = {
             "result": result,
             "residual_seats": residual_seats,
-            "seats": min_seats
+            "seats": min_seats,
         }
         parliament_data.append(party_data)
         seats_left_to_allocate -= min_seats
@@ -320,12 +335,89 @@ def calculate_seats(db: Session, period_id: int, seats: int) -> None:
 def get_distance_scoring_curve(pop_period: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Calculate scoring curve for distances 0-100 for a given PopPeriod."""
     scoring_data = []
-    
+
     for distance in range(101):  # 0 to 100 inclusive
         score = calculate_score(pop_period, distance)
-        scoring_data.append({
-            "distance": distance,
-            "score": score
-        })
-    
+        scoring_data.append({"distance": distance, "score": score})
+
     return scoring_data
+
+
+def _validate_simulation_prerequisites(db: Session, period_id: int) -> None:
+    """Validate that all necessary data exists for simulation."""
+    # Check if period exists
+    period = get_item(db, Period, period_id)
+    if not period:
+        raise HTTPException(status_code=404, detail=f"Period {period_id} not found")
+    
+    # Check if PopPeriods exist
+    pop_periods = get_items(db, PopPeriod, filters={"period_id": period_id})
+    if not pop_periods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No PopPeriod data found for period {period_id}. Cannot simulate without population data."
+        )
+    
+    # Check if PartyPeriods exist
+    party_periods = get_items(db, PartyPeriod, filters={"period_id": period_id})
+    if not party_periods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No PartyPeriod data found for period {period_id}. Cannot simulate without party data."
+        )
+
+
+def run_complete_simulation(
+    db: Session, period_id: int, seats: int, threshold: float
+) -> Dict[str, Any]:
+    """
+    Run complete election simulation for a period.
+    
+    This function orchestrates all simulation steps:
+    1. Validates prerequisites (PopPeriods, PartyPeriods exist)
+    2. Creates PopVotes based on voting behavior calculations
+    3. Creates ElectionResults with seat allocation
+    4. Returns comprehensive simulation statistics
+    
+    Args:
+        db: Database session
+        period_id: Period to simulate
+        seats: Total number of parliament seats
+        threshold: Minimum percentage to enter parliament
+        
+    Returns:
+        Dict with simulation results and statistics
+    """
+    # Validate prerequisites
+    _validate_simulation_prerequisites(db, period_id)
+    
+    # Step 1: Create pop votes
+    create_pop_votes(db, period_id)
+    
+    # Step 2: Create election results with integrated seat calculation
+    create_election_results(db, period_id, seats, threshold)
+    
+    # Gather statistics for return
+    pop_votes = get_items(db, PopVote, filters={"period_id": period_id})
+    election_results = get_items(db, ElectionResult, filters={"period_id": period_id})
+    
+    # Calculate totals
+    total_votes = sum(vote.votes for vote in pop_votes)
+    parties_in_parliament = len([r for r in election_results if r.in_parliament])
+    total_parties = len([r for r in election_results if r.party_id > 0])  # Exclude non-voters/small parties
+    
+    return {
+        "success": True,
+        "message": f"Complete simulation finished for period {period_id}",
+        "period_id": period_id,
+        "parameters": {
+            "seats": seats,
+            "threshold": threshold
+        },
+        "statistics": {
+            "total_votes": total_votes,
+            "total_parties": total_parties,
+            "parties_in_parliament": parties_in_parliament,
+            "parliament_threshold_met": parties_in_parliament > 0
+        }
+    }

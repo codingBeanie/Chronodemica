@@ -1,4 +1,4 @@
-import { API, type ApiResponse, type VotingBehavior, type PopPeriod } from '../core';
+import { API, type ApiResponse, type VotingBehavior, type PopPeriod, type ElectionResult, type Party } from '../core';
 
 // Distance scoring interface for the curve data
 export interface DistanceScoring {
@@ -43,4 +43,116 @@ export async function getVotingBehavior(periodId: number, popId: number): Promis
   }
   
   return result as ApiResponse<VotingBehavior[]>;
+}
+
+// Interface for simulation results
+export interface SimulationResult {
+  success: boolean;
+  message: string;
+  period_id: number;
+  parameters: {
+    seats: number;
+    threshold: number;
+  };
+  statistics: {
+    total_votes: number;
+    total_parties: number;
+    parties_in_parliament: number;
+    parliament_threshold_met: boolean;
+  };
+}
+
+// Run complete election simulation
+export async function runElectionSimulation(
+  periodId: number, 
+  seats: number, 
+  threshold: number
+): Promise<ApiResponse<SimulationResult>> {
+  const result = await API.postSimulation(`period/${periodId}/full-simulation?seats=${seats}&threshold=${threshold}`);
+  return result as ApiResponse<SimulationResult>;
+}
+
+// Enhanced election result interface with party names
+export interface EnrichedElectionResult extends Omit<ElectionResult, 'party_id'> {
+  party_id: number;
+  party_name: string;
+  party_full_name: string;
+}
+
+// Get election results for a period (raw, without party names)
+export async function getElectionResults(periodId: number): Promise<ApiResponse<ElectionResult[]>> {
+  const result = await API.getSimulation(`period/${periodId}/results`);
+  return result as ApiResponse<ElectionResult[]>;
+}
+
+// Get election results enriched with party names
+export async function getEnrichedElectionResults(periodId: number): Promise<ApiResponse<EnrichedElectionResult[]>> {
+  try {
+    // Get election results and all parties in parallel
+    const [resultsResponse, partiesResponse] = await Promise.all([
+      API.getSimulation(`period/${periodId}/results`),
+      API.getAll<Party>('Party', 0, 1000) // Get all parties
+    ]);
+
+    if (!resultsResponse.success) {
+      return resultsResponse as ApiResponse<EnrichedElectionResult[]>;
+    }
+
+    if (!partiesResponse.success) {
+      return {
+        success: false,
+        error: partiesResponse.error || 'Failed to load parties'
+      };
+    }
+
+    const results = resultsResponse.data || [];
+    const parties = partiesResponse.data || [];
+
+    // Create party lookup map
+    const partyMap = new Map<number, Party>();
+    parties.forEach(party => {
+      if (party.id) {
+        partyMap.set(party.id, party);
+      }
+    });
+
+    // Enrich results with party names
+    const enrichedResults: EnrichedElectionResult[] = results.map((result: ElectionResult) => {
+      // Handle special party IDs for non-voters and small parties
+      if (result.party_id === -1) {
+        return {
+          ...result,
+          party_name: "Non-Voters",
+          party_full_name: "Non-Voters"
+        };
+      }
+      
+      if (result.party_id === -2) {
+        return {
+          ...result,
+          party_name: "Small Parties", 
+          party_full_name: "Small Parties"
+        };
+      }
+      
+      // Handle regular parties
+      const party = partyMap.get(result.party_id);
+      return {
+        ...result,
+        party_name: party?.name || `Unknown Party (ID: ${result.party_id})`,
+        party_full_name: party?.full_name || party?.name || `Unknown Party (ID: ${result.party_id})`
+      };
+    });
+
+    return {
+      success: true,
+      data: enrichedResults
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to enrich election results'
+    };
+  }
 }

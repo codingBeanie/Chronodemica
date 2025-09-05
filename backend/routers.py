@@ -9,7 +9,7 @@ from models import (
 )
 import crud
 import statistics
-from simulation import create_pop_votes, create_election_results, get_voting_behavior, get_distance_scoring_curve
+from simulation import create_pop_votes, create_election_results, get_voting_behavior, get_distance_scoring_curve, run_complete_simulation
 
 # Load environment variables
 load_dotenv()
@@ -346,8 +346,8 @@ def simulate_pop_votes(period_id: int, db: Session = Depends(get_session)):
 @router.post("/simulation/period/{period_id}/election-results")
 def simulate_election_results(
     period_id: int, 
-    seats: int = 100,
-    threshold: float = 5.0,
+    seats: int,
+    threshold: float,
     db: Session = Depends(get_session)
 ):
     """Generate election results and seat allocation for a period."""
@@ -362,18 +362,12 @@ def simulate_election_results(
 @router.post("/simulation/period/{period_id}/full-simulation")
 def run_full_simulation(
     period_id: int,
-    seats: int = 100,
-    threshold: float = 5.0,
+    seats: int,
+    threshold: float,
     db: Session = Depends(get_session)
 ):
-    """Run complete simulation: pop votes + election results."""
-    create_pop_votes(db, period_id)
-    create_election_results(db, period_id, seats, threshold)
-    return {
-        "message": f"Full simulation completed for period {period_id}",
-        "seats": seats,
-        "threshold": threshold
-    }
+    """Run complete simulation with validation and comprehensive results."""
+    return run_complete_simulation(db, period_id, seats, threshold)
 
 
 @router.get("/simulation/period/{period_id}/pop/{pop_id}/voting-behavior", response_model=List[Dict[str, Any]])
