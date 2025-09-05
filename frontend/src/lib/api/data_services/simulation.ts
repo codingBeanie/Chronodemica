@@ -1,4 +1,24 @@
-import { API, type ApiResponse, type VotingBehavior } from '../core';
+import { API, type ApiResponse, type VotingBehavior, type PopPeriod } from '../core';
+
+// Distance scoring interface for the curve data
+export interface DistanceScoring {
+  distance: number;
+  score: number;
+}
+
+// Get distance scoring curve (0-100) for a PopPeriod
+export async function getDistanceScoring(popPeriod: PopPeriod): Promise<ApiResponse<DistanceScoring[]>> {
+  const result = await API.getSimulation(`pop-period/${popPeriod.id}/distance-scoring`);
+  
+  if (result.success && result.data) {
+    return {
+      success: true,
+      data: result.data as DistanceScoring[]
+    };
+  }
+  
+  return result as ApiResponse<DistanceScoring[]>;
+}
 
 // Get voting behavior for a specific population in a period with processed data
 export async function getVotingBehavior(periodId: number, popId: number): Promise<ApiResponse<VotingBehavior[]>> {

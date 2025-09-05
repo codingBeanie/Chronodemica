@@ -7,6 +7,7 @@
 	import ParameterEdit from '../../components/builder/ParameterEdit.svelte';
 	import Table from '../../components/ui/Table.svelte';
 	import PoliticalCompass from '../../components/plots/PoliticalCompass.svelte';
+	import ScoringCurve from '../../components/plots/ScoringCurve.svelte';
 	import { API, type Period, type Pop, type Party, type PopPeriod, type PartyPeriod, type VotingBehavior } from '../../lib/api/core';
 	import { getVotingBehavior } from '../../lib/api/data_services/simulation';
 	import { onMount } from 'svelte';
@@ -315,6 +316,15 @@
 				<PoliticalCompass period={parseInt(selectedPeriod)} refreshTrigger={refreshTrigger} />
 			{:else}
 				<p class="text-sm text-dark-alt">Please select a period to view the political compass</p>
+			{/if}
+		</Container>
+		
+		<!-- scoring curve -->
+		<Container title="Scoring Curve">
+			{#if periodData && selectedDataModel === 'Population'}
+				<ScoringCurve popPeriod={periodData as PopPeriod} refreshTrigger={refreshTrigger} />
+			{:else}
+				<p class="text-sm text-dark-alt">Please create or select PopPeriod data to view the scoring curve</p>
 			{/if}
 		</Container>
 	</div>

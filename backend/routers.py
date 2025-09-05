@@ -9,7 +9,7 @@ from models import (
 )
 import crud
 import statistics
-from simulation import create_pop_votes, create_election_results, get_voting_behavior
+from simulation import create_pop_votes, create_election_results, get_voting_behavior, get_distance_scoring_curve
 
 # Load environment variables
 load_dotenv()
@@ -423,3 +423,28 @@ def get_simulation_pop_votes(period_id: int, db: Session = Depends(get_session))
     if not votes:
         raise HTTPException(status_code=404, detail="No pop votes found for this period")
     return votes
+
+
+@router.get("/simulation/pop-period/{pop_period_id}/distance-scoring", response_model=List[Dict[str, Any]])
+def get_pop_period_distance_scoring(pop_period_id: int, db: Session = Depends(get_session)):
+    """Get distance scoring curve (0-100) for a specific PopPeriod."""
+    # Get the PopPeriod entry
+    pop_period = crud.get_item(db, PopPeriod, pop_period_id)
+    if not pop_period:
+        raise HTTPException(status_code=404, detail="PopPeriod not found")
+    
+    # Convert to dict for compatibility
+    pop_period_dict = {
+        "pop_id": pop_period.pop_id,
+        "period_id": pop_period.period_id,
+        "social_orientation": pop_period.social_orientation,
+        "economic_orientation": pop_period.economic_orientation,
+        "max_political_distance": pop_period.max_political_distance,
+        "variety_tolerance": pop_period.variety_tolerance,
+        "non_voters_distance": pop_period.non_voters_distance,
+        "small_party_distance": pop_period.small_party_distance,
+        "ratio_eligible": pop_period.ratio_eligible,
+        "pop_size": pop_period.pop_size
+    }
+    
+    return get_distance_scoring_curve(pop_period_dict)

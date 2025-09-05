@@ -315,3 +315,17 @@ def calculate_seats(db: Session, period_id: int, seats: int) -> None:
         result = party_data["result"]
         update_data = {"seats": party_data["seats"]}
         update_item(db, result, update_data)
+
+
+def get_distance_scoring_curve(pop_period: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Calculate scoring curve for distances 0-100 for a given PopPeriod."""
+    scoring_data = []
+    
+    for distance in range(101):  # 0 to 100 inclusive
+        score = calculate_score(pop_period, distance)
+        scoring_data.append({
+            "distance": distance,
+            "score": score
+        })
+    
+    return scoring_data
