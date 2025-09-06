@@ -144,14 +144,14 @@
       annotations: PLOT_CONFIG.ANNOTATIONS.map(annotation => ({
         ...annotation,
         showarrow: false,
-        font: { size: PLOT_CONFIG.FONT_SIZE.annotation, color: colors.dark },
+        font: { size: PLOT_CONFIG.FONT_SIZE.annotation, color: colors.dark, family: 'Noto Sans, sans-serif' },
         xanchor: 'center' as const,
         yanchor: 'middle' as const
       })),
       margin: PLOT_CONFIG.MARGIN,
       paper_bgcolor: colors.light,
       plot_bgcolor: colors.light,
-      font: { color: colors.dark, size: PLOT_CONFIG.FONT_SIZE.default }
+      font: { color: colors.dark, size: PLOT_CONFIG.FONT_SIZE.default, family: 'Noto Sans, sans-serif' }
     };
   }
 

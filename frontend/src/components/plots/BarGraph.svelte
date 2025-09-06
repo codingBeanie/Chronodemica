@@ -21,7 +21,7 @@
 
   // Central configuration
   const PLOT_CONFIG = {
-    MARGIN: { t: 40, l: 40, r: 10, b: 30 } as const,
+    MARGIN: { t: 40, l: 40, r: 10, b: 40 } as const,
     FONT_SIZE: { tick: 18, default: 16, title: 18, annotation: 22, percentage: 22 } as const,
     BAR_CONFIG: {
       opacity: 0.9,
@@ -90,7 +90,9 @@
     return {
       xaxis: {
         tickangle: 0, // No rotation
-        tickfont: { size: PLOT_CONFIG.FONT_SIZE.tick, color: colors.dark }
+        tickfont: { size: PLOT_CONFIG.FONT_SIZE.tick, color: colors.dark },
+        ticklen: 10, // Length of tick marks
+        tickcolor: 'transparent' // Hide tick marks to create visual space
       },
       yaxis: {
         tickfont: { size: PLOT_CONFIG.FONT_SIZE.tick, color: colors.dark },
@@ -100,7 +102,7 @@
       margin: PLOT_CONFIG.MARGIN,
       paper_bgcolor: colors.light,
       plot_bgcolor: colors.light,
-      font: { color: colors.dark, size: PLOT_CONFIG.FONT_SIZE.default },
+      font: { color: colors.dark, size: PLOT_CONFIG.FONT_SIZE.default, family: 'Noto Sans, sans-serif' },
       shapes: [
         {
           type: 'line',
@@ -129,7 +131,7 @@
           xanchor: 'right',
           yanchor: 'top',
           showarrow: false,
-          font: { size: PLOT_CONFIG.FONT_SIZE.annotation, color: colors.dark, family: 'Arial, sans-serif' },
+          font: { size: PLOT_CONFIG.FONT_SIZE.annotation, color: colors.dark, family: 'Noto Sans, sans-serif' },
           bgcolor: colors.lightAlt,
           bordercolor: colors.dark,
           borderwidth: 0,
@@ -145,7 +147,7 @@
           xanchor: 'center',
           yanchor: 'bottom',
           showarrow: false,
-          font: { size: PLOT_CONFIG.FONT_SIZE.percentage, color: colors.dark, family: 'Arial, sans-serif' },
+          font: { size: PLOT_CONFIG.FONT_SIZE.percentage, color: colors.dark, family: 'Noto Sans, sans-serif' },
           bgcolor: colors.light,
           bordercolor: colors.light,
           borderwidth: 1,

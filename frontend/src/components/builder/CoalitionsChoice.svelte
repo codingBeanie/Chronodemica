@@ -176,20 +176,20 @@
             <div class="flex w-full h-16 rounded overflow-hidden border border-light-alt">
               {#each coalition.parties as party (party.party_id)}
                 <div 
-                  class="flex flex-col items-center justify-center text-white text-xs font-medium relative hover:brightness-110 transition-all cursor-pointer min-w-8 px-1"
+                  class="flex flex-col items-center justify-center text-light text-lg font-medium relative hover:brightness-110 transition-all cursor-pointer min-w-8 px-1"
                   style="flex: {party.seats}; background-color: {party.color || DEFAULT_PARTY_COLOR}"
                   title={getPartyTooltip(party)}
                 >
                   <!-- Party Name Row -->
                   <div class="flex items-center gap-1 mb-1">
                     {#if party.in_government}
-                      <i class="bi bi-bank2 text-white" aria-label="In Government"></i>
+                      <i class="bi bi-bank2 text-light" aria-label="In Government"></i>
                     {/if}
                     <span class="truncate text-center font-semibold">{party.name}</span>
                   </div>
                   
                   <!-- Party Stats Row -->
-                  <div class="text-xs opacity-90">
+                  <div class="text-sm opacity-90">
                     {party.seats} seats • {party.percentage.toFixed(1)}%
                   </div>
                 </div>
