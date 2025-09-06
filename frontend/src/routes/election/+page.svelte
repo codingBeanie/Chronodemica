@@ -4,6 +4,7 @@
 	import SegmentedControl from '../../components/ui/SegmentedControl.svelte';
 	import Button from '../../components/ui/Button.svelte';
 	import Input from '../../components/inputs/Input.svelte';
+	import BarGraph from '../../components/plots/BarGraph.svelte';
 	import { API, type Period } from '../../lib/api/core';
 	import { ELECTION_FIELD_META } from '../../lib/fieldMeta';
 	import { runElectionSimulation, getEnrichedElectionResults, type SimulationResult, type EnrichedElectionResult } from '../../lib/api/data_services/simulation';
@@ -105,7 +106,7 @@
 	}
 </script>
 
-<Grid cols="1fr 7fr">
+<Grid cols="1fr 6fr 1fr">
 	<!-- Selection -->
 	<Container title="Selection">
 		<div class="flex flex-col gap-4">
@@ -155,33 +156,10 @@
 			</div>
 		{:else if simulationResult || electionResults.length > 0}
 			<div class="space-y-6">
-				{#if simulationResult}
-					<!-- Simulation Summary -->
-					<div class="bg-success bg-opacity-10 border border-success rounded-lg p-4">
-						<h3 class="font-medium text-success mb-2">Simulation Completed</h3>
-						<p class="text-sm text-dark">{simulationResult.message}</p>
-						<div class="mt-3 grid grid-cols-2 gap-4 text-sm">
-							<div>
-								<span class="font-medium">Total Votes:</span> 
-								{simulationResult.statistics.total_votes.toLocaleString()}
-							</div>
-							<div>
-								<span class="font-medium">Parties in Parliament:</span> 
-								{simulationResult.statistics.parties_in_parliament}/{simulationResult.statistics.total_parties}
-							</div>
-						</div>
-					</div>
-				{/if}
-
 				<!-- Election Results -->
 				{#if electionResults.length > 0}
 					<div>
-						<h3 class="font-medium text-dark mb-3">
-							{simulationResult ? 'Simulation Results' : 'Existing Results'}
-						</h3>
-						<div class="bg-light border rounded-lg p-4">
-							<pre class="text-xs text-dark overflow-auto max-h-96">{JSON.stringify(electionResults, null, 2)}</pre>
-						</div>
+						<BarGraph {electionResults} {threshold} />
 					</div>
 				{/if}
 			</div>
@@ -192,5 +170,8 @@
 				</p>
 			</div>
 		{/if}
+	</Container>
+	<Container title="Seats">
+		
 	</Container>
 </Grid>

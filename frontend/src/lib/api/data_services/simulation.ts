@@ -77,6 +77,7 @@ export interface EnrichedElectionResult extends Omit<ElectionResult, 'party_id'>
   party_id: number;
   party_name: string;
   party_full_name: string;
+  party_color?: string;
 }
 
 // Get election results for a period (raw, without party names)
@@ -123,15 +124,17 @@ export async function getEnrichedElectionResults(periodId: number): Promise<ApiR
         return {
           ...result,
           party_name: "Non-Voters",
-          party_full_name: "Non-Voters"
+          party_full_name: "Non-Voters",
+          party_color: "#6B7280" // Gray for non-voters
         };
       }
       
       if (result.party_id === -2) {
         return {
           ...result,
-          party_name: "Small Parties", 
-          party_full_name: "Small Parties"
+          party_name: "Misc.Parties", 
+          party_full_name: "Miscellaneous Parties",
+          party_color: "#9CA3AF" // Light gray for misc parties
         };
       }
       
@@ -140,7 +143,8 @@ export async function getEnrichedElectionResults(periodId: number): Promise<ApiR
       return {
         ...result,
         party_name: party?.name || `Unknown Party (ID: ${result.party_id})`,
-        party_full_name: party?.full_name || party?.name || `Unknown Party (ID: ${result.party_id})`
+        party_full_name: party?.full_name || party?.name || `Unknown Party (ID: ${result.party_id})`,
+        party_color: party?.color || "#525252" // Default gray if no color
       };
     });
 

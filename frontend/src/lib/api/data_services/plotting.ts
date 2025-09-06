@@ -1,4 +1,5 @@
 import { API, type PopPeriod, type PartyPeriod, type Pop, type Party } from '../core';
+import type { EnrichedElectionResult } from './simulation';
 
 const SCALING_CONFIG = {
   PARTY_BASE_SIZE: 8,
@@ -23,6 +24,14 @@ export interface OrientationData {
   text: string[];
   size: number[];
   colors?: string[];
+}
+
+export interface ElectionBarData {
+  x: string[];
+  y: number[];
+  text: string[];
+  colors: string[];
+  voterTurnout: number;
 }
 
 async function resolveEntityData<T extends { pop_id?: number; party_id?: number }>(
@@ -123,4 +132,45 @@ export async function getPopOrientations(periodId: number): Promise<OrientationD
     scaleFactor: SCALING_CONFIG.POP_SCALE_FACTOR,
     maxSize: SCALING_CONFIG.POP_MAX_SIZE
   });
+}
+
+const ELECTION_COLORS = [
+  '#3182ce', // accent
+  '#38a169', // success
+  '#1a1a1a', // dark
+  '#525252', // dark-alt
+  '#8B5CF6', // purple
+  '#F59E0B', // orange
+  '#DC2626', // red
+  '#059669', // emerald
+  '#7C3AED', // violet
+  '#D97706'  // amber
+];
+
+export function processElectionResults(results: EnrichedElectionResult[]): ElectionBarData {
+  // Calculate voter turnout (100% - Non-Voters percentage)
+  const nonVotersResult = results.find(r => r.party_id === -1);
+  const nonVotersPercentage = nonVotersResult?.percentage || 0;
+  const voterTurnout = 100 - nonVotersPercentage;
+  
+  // Filter to include actual parties and Small Parties, exclude Non-Voters (-1)
+  const validResults = results.filter(r => r.party_id > 0 || r.party_id === -2);
+  
+  // Separate regular parties from Misc.Parties
+  const regularParties = validResults.filter(r => r.party_id > 0);
+  const miscParties = validResults.filter(r => r.party_id === -2);
+  
+  // Sort regular parties by percentage descending
+  const sortedRegularParties = regularParties.sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+  
+  // Combine: regular parties first, then Misc.Parties at the end
+  const finalResults = [...sortedRegularParties, ...miscParties];
+
+  return {
+    x: finalResults.map(r => r.party_name),
+    y: finalResults.map(r => r.percentage || 0),
+    text: finalResults.map(r => `${(r.percentage || 0).toFixed(1)}%`), // Only show percentage
+    colors: finalResults.map(r => r.party_color || "#525252"), // Use actual party colors
+    voterTurnout: voterTurnout
+  };
 }
