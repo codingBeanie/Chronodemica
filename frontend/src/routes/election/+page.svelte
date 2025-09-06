@@ -5,6 +5,9 @@
 	import Button from '../../components/ui/Button.svelte';
 	import Input from '../../components/inputs/Input.svelte';
 	import BarGraph from '../../components/plots/BarGraph.svelte';
+	import Table from '../../components/ui/Table.svelte';
+	import Column from '../../components/ui/Column.svelte';
+	import CoalitionsChoice from '../../components/builder/CoalitionsChoice.svelte';
 	import { API, type Period } from '../../lib/api/core';
 	import { ELECTION_FIELD_META } from '../../lib/fieldMeta';
 	import { runElectionSimulation, getEnrichedElectionResults, type SimulationResult, type EnrichedElectionResult } from '../../lib/api/data_services/simulation';
@@ -26,6 +29,24 @@
 		title: p.year.toString(), 
 		value: p.id?.toString() || '' 
 	})));
+
+	// Prepare seat distribution data for Table component
+	const seatDistributionData = $derived(() => {
+		if (!electionResults.length) return [];
+		
+		return electionResults
+			.filter(result => result.seats && result.seats > 0 && result.party_id !== -1)
+			.map(result => ({
+				party_name: result.party_name,
+				seats: result.seats,
+				in_government: result.in_government,
+				head_of_government: result.head_of_government,
+				party_color: result.party_color
+			}))
+			.sort((a, b) => (b.seats || 0) - (a.seats || 0));
+	});
+
+	const seatDistributionHeaders = $derived(['party_name', 'seats']);
 
 
 	// Helper functions
@@ -106,6 +127,7 @@
 	}
 </script>
 
+<!-- Top row -->
 <Grid cols="1fr 6fr 1fr">
 	<!-- Selection -->
 	<Container title="Selection">
@@ -140,6 +162,7 @@
 	</Container>
 
 	<!-- Results -->
+	 <Column>
 	<Container title="Results">
 		{#if loading}
 			<div class="flex items-center justify-center p-8">
@@ -171,7 +194,32 @@
 			</div>
 		{/if}
 	</Container>
+	<!-- Bottom row with coalitions -->
+
+	<Container title="Government Formation">
+		<CoalitionsChoice 
+			periodId={selectedPeriod ? parseInt(selectedPeriod) : null}
+			onGovernmentChange={() => selectedPeriod && loadExistingResults(parseInt(selectedPeriod))}
+		/>
+	</Container>
+	</Column>
+	
 	<Container title="Seats">
-		
+		{#if loadingResults}
+			<div class="flex items-center justify-center p-8">
+				<p class="text-dark">Loading...</p>
+			</div>
+		{:else if seatDistributionData().length > 0}
+			<Table 
+				mode="simple"
+				externalData={seatDistributionData()}
+				externalHeaders={seatDistributionHeaders}
+			/>
+		{:else}
+			<div class="text-center p-8">
+				<p class="text-lightText">No seat distribution data available</p>
+			</div>
+		{/if}
 	</Container>
 </Grid>
+

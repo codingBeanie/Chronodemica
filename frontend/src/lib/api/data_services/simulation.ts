@@ -160,3 +160,57 @@ export async function getEnrichedElectionResults(periodId: number): Promise<ApiR
     };
   }
 }
+
+// Coalition interfaces
+export interface CoalitionParty {
+  party_id: number;
+  name: string;
+  full_name: string;
+  color?: string;
+  seats: number;
+  percentage: number;
+  in_government: boolean;
+  head_of_government: boolean;
+}
+
+export interface Coalition {
+  coalition_id: number;
+  coalition_name: string;
+  parties: CoalitionParty[];
+  total_seats: number;
+  total_percentage: number;
+  party_count: number;
+  majority_margin: number;
+  average_distance: number;
+}
+
+// Get all possible coalitions with majority for a period
+export async function getCoalitions(periodId: number): Promise<ApiResponse<Coalition[]>> {
+  const result = await API.getSimulation(`period/${periodId}/coalitions`);
+  return result as ApiResponse<Coalition[]>;
+}
+
+// Government formation interface
+export interface GovernmentFormationResult {
+  message: string;
+  government_parties: number;
+  head_of_government: number | null;
+}
+
+// Government cancellation interface
+export interface GovernmentCancellationResult {
+  message: string;
+  cancelled_parties: number;
+}
+
+// Form a government by setting specified parties as government parties
+export async function makeGovernment(periodId: number, partyIds: number[]): Promise<ApiResponse<GovernmentFormationResult>> {
+  const result = await API.postSimulation(`period/${periodId}/make-government`, partyIds);
+  return result as ApiResponse<GovernmentFormationResult>;
+}
+
+// Cancel government status for specified parties
+export async function cancelGovernment(periodId: number, partyIds: number[]): Promise<ApiResponse<GovernmentCancellationResult>> {
+  const result = await API.postSimulation(`period/${periodId}/cancel-government`, partyIds);
+  return result as ApiResponse<GovernmentCancellationResult>;
+}

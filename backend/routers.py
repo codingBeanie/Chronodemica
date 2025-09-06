@@ -1,7 +1,7 @@
 import os
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, create_engine
+from sqlmodel import Session, create_engine, select
 from dotenv import load_dotenv
 from models import (
     Period, Pop, PopPeriod, Party, PartyPeriod, 
@@ -9,7 +9,7 @@ from models import (
 )
 import crud
 import statistics
-from simulation import create_pop_votes, create_election_results, get_voting_behavior, get_distance_scoring_curve, run_complete_simulation
+from simulation import create_pop_votes, create_election_results, get_voting_behavior, get_distance_scoring_curve, run_complete_simulation, getCoalitions
 
 # Load environment variables
 load_dotenv()
@@ -546,3 +546,83 @@ def get_pop_period_distance_scoring(pop_period_id: int, db: Session = Depends(ge
     }
     
     return get_distance_scoring_curve(pop_period_dict)
+
+
+@router.get("/simulation/period/{period_id}/coalitions", response_model=List[Dict[str, Any]])
+def get_coalitions_for_period(period_id: int, db: Session = Depends(get_session)):
+    """Get all possible coalitions with majority for a specific period."""
+    return getCoalitions(db, period_id)
+
+
+@router.post("/simulation/period/{period_id}/make-government")
+def make_government(
+    period_id: int,
+    party_ids: List[int],
+    db: Session = Depends(get_session)
+):
+    """Update government status for parties in a specific period."""
+    
+    # First, set all parties in this period to not in government
+    statement = select(ElectionResult).where(ElectionResult.period_id == period_id)
+    all_results = db.exec(statement).all()
+    
+    if not all_results:
+        raise HTTPException(status_code=404, detail="No election results found for this period")
+    
+    # Reset all parties to not in government
+    for result in all_results:
+        result.in_government = False
+        result.head_of_government = False
+    
+    # Set specified parties to in government
+    government_results = []
+    for result in all_results:
+        if result.party_id in party_ids:
+            result.in_government = True
+            government_results.append(result)
+    
+    # Set the party with most seats as head of government
+    if government_results:
+        head_party = max(government_results, key=lambda x: x.seats)
+        head_party.head_of_government = True
+    
+    # Commit changes
+    db.commit()
+    
+    return {
+        "message": f"Government formed for period {period_id}",
+        "government_parties": len(party_ids),
+        "head_of_government": head_party.party_id if government_results else None
+    }
+
+
+@router.post("/simulation/period/{period_id}/cancel-government")
+def cancel_government(
+    period_id: int,
+    party_ids: List[int],
+    db: Session = Depends(get_session)
+):
+    """Remove government status from specified parties in a specific period."""
+    
+    # Get election results for specified parties in this period
+    statement = select(ElectionResult).where(
+        ElectionResult.period_id == period_id,
+        ElectionResult.party_id.in_(party_ids)
+    )
+    results = db.exec(statement).all()
+    
+    if not results:
+        raise HTTPException(status_code=404, detail="No election results found for specified parties")
+    
+    # Set specified parties to not in government
+    for result in results:
+        result.in_government = False
+        result.head_of_government = False
+    
+    # Commit changes
+    db.commit()
+    
+    return {
+        "message": f"Government cancelled for period {period_id}",
+        "cancelled_parties": len(party_ids)
+    }

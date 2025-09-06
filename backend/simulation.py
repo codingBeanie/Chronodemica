@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 from sqlmodel import Session
 import numpy as np
+from itertools import combinations
 from fastapi import HTTPException
 from models import Pop, Party, PopPeriod, PartyPeriod, PopVote, ElectionResult, Period
 from crud import get_items, create_item, update_item, get_item
@@ -421,3 +422,158 @@ def run_complete_simulation(
             "parliament_threshold_met": parties_in_parliament > 0
         }
     }
+
+
+def calculate_average_coalition_distance(party_ids: List[int], party_orientations: Dict[int, Dict[str, int]]) -> float:
+    """
+    Calculate the average political distance between all parties in a coalition.
+    
+    Args:
+        party_ids: List of party IDs in the coalition
+        party_orientations: Dict mapping party IDs to their political orientations
+        
+    Returns:
+        Average distance between all party pairs in the coalition
+    """
+    if len(party_ids) <= 1:
+        return 0.0
+    
+    total_distance = 0.0
+    pair_count = 0
+    
+    # Calculate distance between each pair of parties
+    for i in range(len(party_ids)):
+        for j in range(i + 1, len(party_ids)):
+            party1_id = party_ids[i]
+            party2_id = party_ids[j]
+            
+            # Get orientations for both parties
+            if party1_id in party_orientations and party2_id in party_orientations:
+                party1_orient = party_orientations[party1_id]
+                party2_orient = party_orientations[party2_id]
+                
+                # Calculate distance using the existing calculate_distance function
+                distance = calculate_distance(
+                    party1_orient["social_orientation"],
+                    party1_orient["economic_orientation"],
+                    party2_orient["social_orientation"],
+                    party2_orient["economic_orientation"],
+                    ratio=False  # Get raw distance, not percentage
+                )
+                
+                total_distance += distance
+                pair_count += 1
+    
+    return total_distance / pair_count if pair_count > 0 else 0.0
+
+
+def getCoalitions(db: Session, period_id: int) -> List[Dict[str, Any]]:
+    """
+    Find all possible coalitions that have a majority of seats for a given period.
+    
+    Args:
+        db: Database session
+        period_id: Period to analyze for coalitions
+        
+    Returns:
+        List of coalition dictionaries with party details and total seats
+    """
+    # Get election results for the period
+    election_results = get_items(db, ElectionResult, filters={"period_id": period_id})
+    if not election_results:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No election results found for period {period_id}"
+        )
+    
+    # Filter for parties with seats (in parliament)
+    parties_with_seats = [result for result in election_results if result.seats > 0 and result.party_id > 0]
+    if not parties_with_seats:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No parties with seats found for period {period_id}"
+        )
+    
+    # Calculate total seats in parliament
+    total_seats = sum(result.seats for result in parties_with_seats)
+    majority_threshold = total_seats // 2 + 1
+    
+    # Get party details and political orientations for enriched coalition information
+    party_details = {}
+    party_orientations = {}
+    
+    for result in parties_with_seats:
+        party = get_item(db, Party, result.party_id)
+        if party:
+            party_details[result.party_id] = {
+                "name": party.name,
+                "full_name": party.full_name,
+                "color": party.color
+            }
+        
+        # Get party period data for political orientations
+        party_periods = get_items(db, PartyPeriod, filters={"period_id": period_id, "party_id": result.party_id})
+        if party_periods:
+            party_period = party_periods[0]
+            party_orientations[result.party_id] = {
+                "social_orientation": party_period.social_orientation,
+                "economic_orientation": party_period.economic_orientation
+            }
+    
+    coalitions = []
+    
+    # Generate all possible combinations of parties (from 1 to all parties)
+    for size in range(1, len(parties_with_seats) + 1):
+        for combination in combinations(parties_with_seats, size):
+            # Calculate total seats for this combination
+            coalition_seats = sum(party.seats for party in combination)
+            
+            # Check if coalition has majority
+            if coalition_seats >= majority_threshold:
+                coalition_parties = []
+                party_ids_in_coalition = []
+                
+                for party in combination:
+                    party_info = party_details.get(party.party_id, {
+                        "name": f"Party {party.party_id}",
+                        "full_name": f"Party {party.party_id}",
+                        "color": "#525252"
+                    })
+                    
+                    coalition_parties.append({
+                        "party_id": party.party_id,
+                        "name": party_info["name"],
+                        "full_name": party_info["full_name"],
+                        "color": party_info["color"],
+                        "seats": party.seats,
+                        "percentage": party.percentage,
+                        "in_government": party.in_government,
+                        "head_of_government": party.head_of_government
+                    })
+                    party_ids_in_coalition.append(party.party_id)
+                
+                # Calculate average distance between all parties in the coalition
+                avg_distance = calculate_average_coalition_distance(party_ids_in_coalition, party_orientations)
+                
+                # Generate coalition name based on party names sorted by seat share
+                coalition_parties_sorted = sorted(coalition_parties, key=lambda x: x["seats"], reverse=True)
+                party_names = [party["name"] for party in coalition_parties_sorted]
+                coalition_name = "-".join(party_names) + " Coalition"
+                
+                coalition = {
+                    "coalition_id": len(coalitions) + 1,
+                    "coalition_name": coalition_name,
+                    "parties": coalition_parties,
+                    "total_seats": coalition_seats,
+                    "total_percentage": sum(party.percentage for party in combination),
+                    "party_count": len(combination),
+                    "majority_margin": coalition_seats - majority_threshold + 1,
+                    "average_distance": avg_distance
+                }
+                
+                coalitions.append(coalition)
+    
+    # Sort coalitions first by party count (ascending), then by average distance (ascending)
+    coalitions.sort(key=lambda x: (x["party_count"], x["average_distance"]))
+    
+    return coalitions

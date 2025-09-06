@@ -264,6 +264,14 @@
                       ></div>
                       <span class={styles.colorText}>{row[header]}</span>
                     </div>
+                  {:else if header === 'party_name' && row.in_government !== undefined}
+                    <!-- Party name with government icon -->
+                    <div class="flex items-center gap-1">
+                      {#if row.in_government}
+                        <i class="bi bi-bank2 text-accent" title={row.head_of_government ? "Head of Government" : "In Government"}></i>
+                      {/if}
+                      {row[header] ?? '-'}
+                    </div>
                   {:else}
                     <!-- Regular cell content -->
                     {row[header] ?? '-'}
