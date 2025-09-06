@@ -1,29 +1,63 @@
 <script lang="ts">
-  import { getCoalitions, makeGovernment, cancelGovernment, type Coalition } from '$lib/api/data_services/simulation';
+  import { getCoalitions, makeGovernment, cancelGovernment, type Coalition, type CoalitionParty } from '$lib/api/data_services/simulation';
   import Button from '../ui/Button.svelte';
 
-  // Props
-  let {
-    periodId,
-    onGovernmentChange
-  }: {
+  // Props interface
+  interface Props {
     periodId: number | null;
     onGovernmentChange?: () => void;
-  } = $props();
+  }
 
-  // State
+  let { periodId, onGovernmentChange }: Props = $props();
+
+  // Component state
   let coalitions = $state<Coalition[]>([]);
   let loading = $state(false);
   let error = $state('');
 
-  // Load coalitions when component mounts or periodId changes
+  // Constants
+  const DEFAULT_PARTY_COLOR = '#525252';
+  const MESSAGES = {
+    LOADING: 'Loading coalitions...',
+    NO_DATA: 'No coalition data available. Run a simulation first.',
+    LOAD_ERROR: 'Failed to load coalitions',
+    GOVERNMENT_FORM_ERROR: 'Failed to form government',
+    GOVERNMENT_CANCEL_ERROR: 'Failed to cancel government',
+    LOAD_GENERIC_ERROR: 'An error occurred loading coalitions',
+    GOVERNMENT_FORM_GENERIC_ERROR: 'An error occurred forming government',
+    GOVERNMENT_CANCEL_GENERIC_ERROR: 'An error occurred cancelling government'
+  } as const;
+
+  // Load coalitions when periodId changes
   $effect(() => {
     if (periodId) {
       loadCoalitions();
     }
   });
 
-  async function loadCoalitions() {
+  // Utility functions
+  function isCoalitionInGovernment(coalition: Coalition): boolean {
+    return coalition.parties.every(party => party.in_government);
+  }
+
+  function getPartyTooltip(party: CoalitionParty): string {
+    const governmentStatus = party.in_government 
+      ? ` • ${party.head_of_government ? 'Head of Government' : 'In Government'}`
+      : '';
+    return `${party.name}: ${party.seats} seats (${party.percentage.toFixed(1)}%)${governmentStatus}`;
+  }
+
+  function getButtonConfig(coalition: Coalition) {
+    const inGovernment = isCoalitionInGovernment(coalition);
+    return {
+      text: inGovernment ? 'Cancel Government' : 'Make Government',
+      theme: inGovernment ? 'failure' : 'accent',
+      action: inGovernment ? handleCancelGovernment : handleMakeGovernment
+    } as const;
+  }
+
+  // API functions
+  async function loadCoalitions(): Promise<void> {
     if (!periodId) return;
     
     loading = true;
@@ -35,16 +69,22 @@
       if (response.success && response.data) {
         coalitions = response.data;
       } else {
-        error = response.error || 'Failed to load coalitions';
+        error = response.error || MESSAGES.LOAD_ERROR;
       }
     } catch (err) {
-      error = err instanceof Error ? err.message : 'An error occurred loading coalitions';
+      error = err instanceof Error ? err.message : MESSAGES.LOAD_GENERIC_ERROR;
     } finally {
       loading = false;
     }
   }
 
-  async function handleMakeGovernment(coalition: Coalition) {
+  async function handleGovernmentAction(
+    coalition: Coalition, 
+    action: typeof makeGovernment | typeof cancelGovernment,
+    successMessage: string,
+    errorMessage: string,
+    genericErrorMessage: string
+  ): Promise<void> {
     if (!periodId) return;
     
     loading = true;
@@ -52,116 +92,119 @@
     
     try {
       const partyIds = coalition.parties.map(party => party.party_id);
-      const response = await makeGovernment(periodId, partyIds);
+      const response = await action(periodId, partyIds);
       
       if (response.success) {
-        // Show success message or reload data
-        console.log('Government formed successfully:', response.data);
-        // Optionally reload coalitions to update the display
+        console.log(successMessage, response.data);
         await loadCoalitions();
-        // Notify parent to update seats overview
         onGovernmentChange?.();
       } else {
-        error = response.error || 'Failed to form government';
+        error = response.error || errorMessage;
       }
     } catch (err) {
-      error = err instanceof Error ? err.message : 'An error occurred forming government';
+      error = err instanceof Error ? err.message : genericErrorMessage;
     } finally {
       loading = false;
     }
   }
 
-  function isCoalitionInGovernment(coalition: Coalition): boolean {
-    return coalition.parties.every(party => party.in_government);
+  async function handleMakeGovernment(coalition: Coalition): Promise<void> {
+    await handleGovernmentAction(
+      coalition,
+      makeGovernment,
+      'Government formed successfully:',
+      MESSAGES.GOVERNMENT_FORM_ERROR,
+      MESSAGES.GOVERNMENT_FORM_GENERIC_ERROR
+    );
   }
 
-  async function handleCancelGovernment(coalition: Coalition) {
-    if (!periodId) return;
-    
-    loading = true;
-    error = '';
-    
-    try {
-      const partyIds = coalition.parties.map(party => party.party_id);
-      const response = await cancelGovernment(periodId, partyIds);
-      
-      if (response.success) {
-        console.log('Government cancelled successfully:', response.data);
-        await loadCoalitions();
-        // Notify parent to update seats overview
-        onGovernmentChange?.();
-      } else {
-        error = response.error || 'Failed to cancel government';
-      }
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'An error occurred cancelling government';
-    } finally {
-      loading = false;
-    }
+  async function handleCancelGovernment(coalition: Coalition): Promise<void> {
+    await handleGovernmentAction(
+      coalition,
+      cancelGovernment,
+      'Government cancelled successfully:',
+      MESSAGES.GOVERNMENT_CANCEL_ERROR,
+      MESSAGES.GOVERNMENT_CANCEL_GENERIC_ERROR
+    );
   }
 </script>
 
+<!-- Component Container -->
 <div class="w-full p-2">
   {#if loading}
-    <div class="text-dark">Loading coalitions...</div>
+    <!-- Loading State -->
+    <div class="text-dark">{MESSAGES.LOADING}</div>
+    
   {:else if error}
+    <!-- Error State -->
     <div class="text-failure p-4 bg-light border border-failure rounded-md">
       Error: {error}
     </div>
+    
   {:else if coalitions.length === 0}
+    <!-- Empty State -->
     <div class="text-dark p-4 bg-light-alt border border-light-alt rounded-md">
-      No coalition data available. Run a simulation first.
+      {MESSAGES.NO_DATA}
     </div>
+    
   {:else}
+    <!-- Coalitions List -->
     <div class="w-full h-full overflow-y-auto space-y-6">
       {#each coalitions as coalition (coalition.coalition_id)}
+        {@const buttonConfig = getButtonConfig(coalition)}
+        
+        <!-- Coalition Card -->
         <div class="p-4 bg-light border border-light-alt rounded-md transition-shadow duration-200 hover:shadow-lg">
+          
           <!-- Coalition Header -->
-          <div class="mb-4">
-            <div class="text-lg font-bold text-dark mb-1">
+          <header class="mb-4">
+            <h3 class="text-lg font-bold text-dark mb-1">
               {coalition.coalition_name}
-            </div>
+            </h3>
             <div class="text-base font-medium text-dark-alt mb-3">
               {coalition.total_seats} seats • {coalition.total_percentage.toFixed(1)}% • +{coalition.majority_margin} majority
             </div>
-          </div>
+          </header>
           
-          <!-- Parties Section -->
-          <div class="space-y-3">
-            <div class="text-base font-semibold text-dark border-b border-light-alt pb-1">
+          <!-- Coalition Content -->
+          <section class="space-y-3">
+            <h4 class="text-base font-semibold text-dark border-b border-light-alt pb-1">
               Coalition Members
-            </div>
-            <div class="space-y-2">
+            </h4>
+            
+            <!-- Proportional Bar Chart -->
+            <div class="flex w-full h-16 rounded overflow-hidden border border-light-alt">
               {#each coalition.parties as party (party.party_id)}
-                <div class="p-3 bg-light-alt rounded">
-                  <div class="flex items-center space-x-3 mb-2">
-                    <div 
-                      class="w-5 h-5 rounded-full flex-shrink-0"
-                      style="background-color: {party.color || 'var(--dark-alt)'}"
-                    ></div>
-                    <div class="flex items-center gap-2">
-                      {#if party.in_government}
-                        <i class="bi bi-bank2 text-accent" title={party.head_of_government ? "Head of Government" : "In Government"}></i>
-                      {/if}
-                      <span class="text-base font-semibold text-dark">{party.name}</span>
-                    </div>
+                <div 
+                  class="flex flex-col items-center justify-center text-white text-xs font-medium relative hover:brightness-110 transition-all cursor-pointer min-w-8 px-1"
+                  style="flex: {party.seats}; background-color: {party.color || DEFAULT_PARTY_COLOR}"
+                  title={getPartyTooltip(party)}
+                >
+                  <!-- Party Name Row -->
+                  <div class="flex items-center gap-1 mb-1">
+                    {#if party.in_government}
+                      <i class="bi bi-bank2 text-white" aria-label="In Government"></i>
+                    {/if}
+                    <span class="truncate text-center font-semibold">{party.name}</span>
                   </div>
-                  <div class="text-left">
-                    <span class="text-sm text-dark-alt">{party.seats} seats • {party.percentage.toFixed(1)}%</span>
+                  
+                  <!-- Party Stats Row -->
+                  <div class="text-xs opacity-90">
+                    {party.seats} seats • {party.percentage.toFixed(1)}%
                   </div>
                 </div>
               {/each}
             </div>
             
-            <!-- Action Button -->
-            <div class="mt-4 pt-3 border-t border-light-alt">
+            <!-- Government Action -->
+            <footer class="mt-4 pt-3 border-t border-light-alt">
               <Button 
-                text={isCoalitionInGovernment(coalition) ? "Cancel Government" : "Make Government"}
-                theme={isCoalitionInGovernment(coalition) ? "failure" : "accent"}
-                onclick={() => isCoalitionInGovernment(coalition) ? handleCancelGovernment(coalition) : handleMakeGovernment(coalition)}
+                text={buttonConfig.text}
+                theme={buttonConfig.theme}
+                onclick={() => buttonConfig.action(coalition)}
               />
-            </div>
-          </div>
+            </footer>
+          </section>
         </div>
       {/each}
     </div>
