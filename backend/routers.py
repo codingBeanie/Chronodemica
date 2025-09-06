@@ -475,6 +475,44 @@ def get_simulation_results(period_id: int, db: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="No election results found for this period")
     return results
 
+# Pop size ratios endpoint
+@router.get("/pop-size-ratios/{period_id}", response_model=List[dict])
+def get_pop_size_ratios(period_id: int, db: Session = Depends(get_session)):
+    """
+    Get pop size ratios for a specific period.
+    Returns all pops with their pop_size and percentage of total population.
+    """
+    from sqlmodel import select, func
+    
+    # Verify period exists
+    period = crud.get_item(db, Period, period_id)
+    if not period:
+        raise HTTPException(status_code=404, detail="Period not found")
+    
+    # Get all pop-periods for this period with pop details
+    statement = select(PopPeriod, Pop).join(Pop, PopPeriod.pop_id == Pop.id).where(PopPeriod.period_id == period_id)
+    results = db.exec(statement).all()
+    
+    if not results:
+        return []
+    
+    # Calculate total population and ratios
+    total_population = sum(pop_period.pop_size for pop_period, _ in results)
+    
+    pop_ratios = []
+    for pop_period, pop in results:
+        percentage = (pop_period.pop_size / total_population * 100) if total_population > 0 else 0
+        pop_ratios.append({
+            'pop_name': pop.name,
+            'pop_size': pop_period.pop_size,
+            'percentage': round(percentage, 2)
+        })
+    
+    # Sort by pop_size descending
+    pop_ratios.sort(key=lambda x: x['pop_size'], reverse=True)
+    
+    return pop_ratios
+
 
 @router.get("/simulation/period/{period_id}/pop-votes", response_model=List[PopVote])
 def get_simulation_pop_votes(period_id: int, db: Session = Depends(get_session)):

@@ -188,6 +188,10 @@ export const API = {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined
     });
+  },
+
+  async getPopSizeRatios(periodId: number): Promise<ApiResponse<any[]>> {
+    return request(`/pop-size-ratios/${periodId}`);
   }
 };
 

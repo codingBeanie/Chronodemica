@@ -16,7 +16,7 @@
   
   // Props with defaults
   const { 
-    model, 
+    model = undefined, 
     mode = 'crud',
     externalData = [],
     externalHeaders = []

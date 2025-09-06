@@ -2,12 +2,12 @@ import { API, type PopPeriod, type PartyPeriod, type Pop, type Party } from '../
 import type { EnrichedElectionResult } from './simulation';
 
 const SCALING_CONFIG = {
-  PARTY_BASE_SIZE: 8,
+  PARTY_BASE_SIZE: 5,
   PARTY_SCALE_FACTOR: 1,
-  PARTY_MAX_SIZE: 50,
-  POP_BASE_SIZE: 8,
+  PARTY_MAX_SIZE: 100,
+  POP_BASE_SIZE: 5,
   POP_SCALE_FACTOR: 1,
-  POP_MAX_SIZE: 50,
+  POP_MAX_SIZE: 100,
 };
 
 const EMPTY_ORIENTATION_DATA: OrientationData = {

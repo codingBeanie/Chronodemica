@@ -30,6 +30,7 @@
 	let selectedObjectName = $state<string>('');
 	let votingBehavior = $state<VotingBehavior[]>([]);
 	let refreshTrigger = $state<number>(0);
+	let popSizeRatios = $state<any[]>([]);
 	
 	// Define headers for voting behavior table (filtered data - no IDs and votes)
 	let votingBehaviorHeaders = $state<string[]>([
@@ -171,6 +172,21 @@
 					parties = partyResult.data;
 				}
 			});
+		}
+	});
+
+	// Load pop size ratios when selectedPeriod changes or data is refreshed
+	$effect(() => {
+		if (selectedPeriod) {
+			// Trigger refresh when refreshTrigger changes (after data save)
+			refreshTrigger; 
+			
+			API.getPopSizeRatios(parseInt(selectedPeriod))
+				.then(result => {
+					if (result.success && result.data) {
+						popSizeRatios = result.data;
+					}
+				});
 		}
 	});
 
@@ -343,6 +359,28 @@
 				<ScoringCurve popPeriod={periodData as PopPeriod} refreshTrigger={refreshTrigger} />
 			{:else}
 				<p class="text-sm text-dark-alt">Please create or select PopPeriod data to view the scoring curve</p>
+			{/if}
+		</Container>
+
+		<!-- pop size ratios -->
+		<Container title="Population Size Ratios">
+			{#if popSizeRatios.length > 0}
+				<Table mode="simple" externalData={popSizeRatios} />
+			{:else}
+				<p class="text-sm text-dark-alt">No population data available for this period</p>
+			{/if}
+		</Container>
+	</div>
+	{/if}
+
+	{#if selectedDataModel === 'Party'}
+	<div class="flex flex-col gap-4">
+		<!-- political compass -->
+		<Container title="Political Compass">
+			{#if selectedPeriod}
+				<PoliticalCompass period={parseInt(selectedPeriod)} refreshTrigger={refreshTrigger} />
+			{:else}
+				<p class="text-sm text-dark-alt">Please select a period to view the political compass</p>
 			{/if}
 		</Container>
 	</div>

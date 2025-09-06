@@ -15,7 +15,7 @@
 
 <a 
 	{href}
-	class="flex items-center hover:opacity-80 py-2 px-3 rounded-lg {isActive ? 'text-light' : 'text-light-alt'}"
+	class="flex items-center py-2 px-3 rounded-lg {isActive ? 'text-light' : 'text-light-alt opacity-80'}"
 >
 	<i class="bi bi-{icon} mr-3 text-2xl"></i>
 	<span class="text-lg">{text}</span>
