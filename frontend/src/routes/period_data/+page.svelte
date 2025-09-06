@@ -29,8 +29,10 @@
 	let selectedPeriodYear = $state<string>(''); 
 	let selectedObjectName = $state<string>('');
 	let votingBehavior = $state<VotingBehavior[]>([]);
+	let previousVotingBehavior = $state<VotingBehavior[]>([]);
 	let refreshTrigger = $state<number>(0);
 	let popSizeRatios = $state<any[]>([]);
+	let previousPopSizeRatios = $state<any[]>([]);
 	
 	// Define headers for voting behavior table (filtered data - no IDs and votes)
 	let votingBehaviorHeaders = $state<string[]>([
@@ -40,7 +42,8 @@
 		'raw_score', 
 		'strength', 
 		'adjusted_score', 
-		'percentage'
+		'percentage',
+		'% change'
 	]);  
 
 	// Derived values
@@ -58,9 +61,82 @@
 	// Constants
 	const dataModelOptions = { 'Population': 'Population', 'Party': 'Party' };
 
+	// Derived values for enhanced voting behavior with % change
+	let enhancedVotingBehavior = $derived(
+		previousVotingBehavior.length > 0 && votingBehavior.length > 0
+			? calculatePercentageChanges(votingBehavior, previousVotingBehavior)
+			: votingBehavior.map(vb => ({ ...vb, '% change': 'N/A' }))
+	);
+
+	// Derived values for enhanced pop size ratios with % change
+	let enhancedPopSizeRatios = $derived(
+		previousPopSizeRatios.length > 0 && popSizeRatios.length > 0
+			? calculatePopSizeRatioChanges(popSizeRatios, previousPopSizeRatios)
+			: popSizeRatios.map(psr => ({ ...psr, '% change': 'N/A' }))
+	);
+
 	// Utility functions
 	function getFirstObjectId(objects: (Pop | Party)[]): string {
 		return objects.length > 0 ? objects[0].id?.toString() || '' : '';
+	}
+
+	function calculatePercentageChanges(current: VotingBehavior[], previous: VotingBehavior[]): any[] {
+		// Create a map of previous percentages by party name for quick lookup
+		const previousMap = new Map<string, number>();
+		previous.forEach(prev => {
+			previousMap.set(prev.party_name, prev.percentage);
+		});
+
+		// Add % change to current voting behavior data
+		return current.map(curr => {
+			const prevPercentage = previousMap.get(curr.party_name);
+			const percentageChange = prevPercentage !== undefined 
+				? (curr.percentage - prevPercentage)
+				: null;
+
+			return {
+				...curr,
+				'% change': percentageChange !== null 
+					? `${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(1)}%`
+					: 'N/A'
+			};
+		});
+	}
+
+	function calculatePopSizeRatioChanges(current: any[], previous: any[]): any[] {
+		// Create a map of previous ratios by pop name for quick lookup
+		const previousMap = new Map<string, number>();
+		previous.forEach(prev => {
+			// Try different possible field names for the ratio value
+			const ratioValue = prev.ratio || prev.percentage || prev.size_ratio || prev.pop_ratio;
+			const nameValue = prev.name || prev.pop_name || prev.population_name;
+			
+			if (nameValue && ratioValue !== undefined) {
+				const parsedRatio = typeof ratioValue === 'string' ? parseFloat(ratioValue) : ratioValue;
+				previousMap.set(nameValue, parsedRatio);
+			}
+		});
+
+		// Add % change to current pop size ratio data
+		return current.map(curr => {
+			// Try different possible field names for current data
+			const currentRatioValue = curr.ratio || curr.percentage || curr.size_ratio || curr.pop_ratio;
+			const currentNameValue = curr.name || curr.pop_name || curr.population_name;
+			
+			const prevRatio = previousMap.get(currentNameValue);
+			const currentRatio = typeof currentRatioValue === 'string' ? parseFloat(currentRatioValue) : currentRatioValue;
+			
+			const percentageChange = prevRatio !== undefined && !isNaN(currentRatio) && !isNaN(prevRatio)
+				? (currentRatio - prevRatio)
+				: null;
+
+			return {
+				...curr,
+				'% change': percentageChange !== null 
+					? `${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(1)}%`
+					: 'N/A'
+			};
+		});
 	}
 
 	function findPreviousPeriod(currentPeriodId: string, allPeriods: Period[]): Period | null {
@@ -126,6 +202,8 @@
 		const newData = await createPeriodData(selectedDataModel, objectId, periodId, sourceData);
 		if (newData) {
 			periodData = newData;
+			// Trigger refresh of political compass and other components
+			refreshTrigger++;
 		}
 	}
 
@@ -187,6 +265,32 @@
 						popSizeRatios = result.data;
 					}
 				});
+		}
+	});
+
+	// Load previous period pop size ratios for % change calculation
+	$effect(() => {
+		if (previousPeriod) {
+			// Trigger refresh when refreshTrigger changes (after data save)
+			refreshTrigger;
+			
+			console.log('Fetching previous pop size ratios for period:', previousPeriod.id);
+			
+			API.getPopSizeRatios(previousPeriod.id!)
+				.then(result => {
+					if (result.success && result.data) {
+						previousPopSizeRatios = result.data;
+					} else {
+						console.warn('No previous pop size ratios data:', result.error);
+						previousPopSizeRatios = [];
+					}
+				})
+				.catch(error => {
+					console.error('Error fetching previous pop size ratios:', error);
+					previousPopSizeRatios = [];
+				});
+		} else {
+			previousPopSizeRatios = [];
 		}
 	});
 
@@ -259,6 +363,39 @@
 			votingBehavior = [];
 		}
 	});
+
+	// Fetch previous period voting behavior for % change calculation
+	$effect(() => {
+		if (selectedObject && selectedDataModel === 'Population' && previousPeriod && previousData) {
+			const prevPeriodId = previousPeriod.id!;
+			const objectId = parseInt(selectedObject);
+			
+			if (!isNaN(objectId) && objectId > 0) {
+				// Depend on refreshTrigger to force re-execution after saves
+				refreshTrigger;
+				
+				console.log('Fetching previous voting behavior for period:', prevPeriodId, 'pop:', objectId);
+				
+				getVotingBehavior(prevPeriodId, objectId)
+					.then(result => {
+						if (result.success && result.data) {
+							previousVotingBehavior = result.data;
+						} else {
+							console.warn('No previous voting behavior data:', result.error);
+							previousVotingBehavior = [];
+						}
+					})
+					.catch(error => {
+						console.error('Error fetching previous voting behavior:', error);
+						previousVotingBehavior = [];
+					});
+			} else {
+				previousVotingBehavior = [];
+			}
+		} else {
+			previousVotingBehavior = [];
+		}
+	});
 </script>
 
 	
@@ -303,6 +440,7 @@
 					objectName={selectedObjectName}
 					periodYear={parseInt(selectedPeriodYear) || 0}
 					onAction={handleParameterSave}
+					previousData={previousData}
 				/>
 			{:else}
 				<div class="text-center">
@@ -327,11 +465,11 @@
 		<!-- preview voting -->
 		{#if selectedDataModel === 'Population'}
 		<Container title="Preview Voting Behavior">
-			{#if votingBehavior.length > 0}
+			{#if enhancedVotingBehavior.length > 0}
 				<Table 
 					model=""
 					mode="simple"
-					externalData={votingBehavior}
+					externalData={enhancedVotingBehavior}
 					externalHeaders={votingBehaviorHeaders}
 				/>
 			{:else}
@@ -364,8 +502,8 @@
 
 		<!-- pop size ratios -->
 		<Container title="Population Size Ratios">
-			{#if popSizeRatios.length > 0}
-				<Table mode="simple" externalData={popSizeRatios} />
+			{#if enhancedPopSizeRatios.length > 0}
+				<Table mode="simple" externalData={enhancedPopSizeRatios} />
 			{:else}
 				<p class="text-sm text-dark-alt">No population data available for this period</p>
 			{/if}

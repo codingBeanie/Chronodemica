@@ -81,11 +81,11 @@
   const styles = getStyles(mode);
   
   // Utility functions
-  const getAlignment = (value: any): string => 
-    typeof value === 'number' ? 'text-right' : 'text-left';
+  const getAlignment = (value: any, header: string): string => 
+    typeof value === 'number' || header === '% change' ? 'text-right' : 'text-left';
   
   const getHeaderAlignment = (header: string): string => 
-    data.length > 0 && typeof data[0][header] === 'number' ? 'text-right' : 'text-left';
+    (data.length > 0 && typeof data[0][header] === 'number') || header === '% change' ? 'text-right' : 'text-left';
   
   const getSortIcon = (column: string): string => {
     if (sortColumn !== column) return 'bi bi-arrow-down-up';
@@ -254,7 +254,7 @@
           {#each data as row, index (mode === 'simple' ? index : row.id)}
             <tr class={styles.trBody}>
               {#each headers as header, cellIndex}
-                <td class="{cellIndex === headers.length - 1 ? styles.tdLast : styles.tdBase} {getAlignment(row[header])}">
+                <td class="{cellIndex === headers.length - 1 ? styles.tdLast : styles.tdBase} {getAlignment(row[header], header)}">
                   {#if header === 'color' && row[header]}
                     <!-- Special color display -->
                     <div class={styles.colorWrapper}>

@@ -16,7 +16,7 @@
 	// State
 	let periods = $state<Period[]>([]);
 	let selectedPeriod = $state('');
-	let seats = $state<number>(ELECTION_FIELD_META.seats.defaultValue!);
+	let seats = $state<number>(getInitialSeats());
 	let threshold = $state<number>(ELECTION_FIELD_META.threshold.defaultValue!);
 	let simulationResult = $state<SimulationResult | null>(null);
 	let electionResults = $state<EnrichedElectionResult[]>([]);
@@ -24,6 +24,26 @@
 	let loading = $state(false);
 	let loadingResults = $state(false);
 	let error = $state<string | null>(null);
+
+	// Helper functions for seat memory
+	function getInitialSeats(): number {
+		if (typeof window !== 'undefined') {
+			const savedSeats = localStorage.getItem('chronodemica_last_seats');
+			if (savedSeats) {
+				const parsedSeats = parseInt(savedSeats);
+				if (!isNaN(parsedSeats) && parsedSeats >= ELECTION_FIELD_META.seats.min && parsedSeats <= ELECTION_FIELD_META.seats.max) {
+					return parsedSeats;
+				}
+			}
+		}
+		return ELECTION_FIELD_META.seats.defaultValue!;
+	}
+
+	function saveSeatsToStorage(seatsValue: number): void {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('chronodemica_last_seats', seatsValue.toString());
+		}
+	}
 
 	// Derived values
 	const periodOptionsArray = $derived(periods.map(p => ({ 
@@ -122,6 +142,9 @@
 		try {
 			const periodId = parseInt(selectedPeriod);
 			
+			// Save seats value to storage
+			saveSeatsToStorage(seats);
+			
 			// Run simulation
 			const simResult = await runElectionSimulation(periodId, seats, threshold);
 			if (!simResult.success) {
@@ -166,6 +189,11 @@
 			}
 		}
 	}
+
+	// Save seats value whenever it changes
+	$effect(() => {
+		saveSeatsToStorage(seats);
+	});
 </script>
 
 <!-- Top row -->

@@ -17,6 +17,7 @@
 		periodYear: number;
 		unsavedChanges?: boolean;
 		onAction?: (action: ApiAction, success: boolean) => void;
+		previousData?: PeriodData | null;
 	}
 
 	let { 
@@ -24,7 +25,8 @@
 		objectName,
 		periodYear,
 		unsavedChanges = $bindable(false), 
-		onAction 
+		onAction,
+		previousData = null
 	}: Props = $props();
 
 	// Internal state
@@ -49,6 +51,22 @@
 
 	function deepClone<T>(obj: T): T {
 		return JSON.parse(JSON.stringify(obj));
+	}
+
+	function getPreviousValue(fieldKey: string): string | undefined {
+		if (!previousData || !(fieldKey in previousData)) return undefined;
+		const prevValue = (previousData as any)[fieldKey];
+		if (prevValue === null || prevValue === undefined) return undefined;
+		return `prev.: ${prevValue.toString()}`;
+	}
+
+	function getCombinedCaption(fieldKey: string): string | undefined {
+		const fieldMeta = getFieldMeta(fieldKey, dataModelType);
+		if (fieldMeta?.showRatio && popSizeCaption) {
+			const prevValue = getPreviousValue(fieldKey);
+			return prevValue ? `${popSizeCaption} | ${prevValue}` : popSizeCaption;
+		}
+		return getPreviousValue(fieldKey);
 	}
 
 	// Change tracking
@@ -138,6 +156,7 @@
 				bind:value={(data as any)[field.key]}
 				type="number"
 				hint={field.meta.hint}
+				caption={getPreviousValue(field.key)}
 			/>
 		{:else}
 			<Slider
@@ -148,7 +167,7 @@
 				max={field.meta.max}
 				step={field.meta.step || 1}
 				hint={field.meta.hint}
-				caption={field.meta.showRatio ? popSizeCaption : undefined}
+				caption={getCombinedCaption(field.key)}
 			/>
 		{/if}
 	{/each}

@@ -469,14 +469,15 @@ def calculate_average_coalition_distance(party_ids: List[int], party_orientation
 
 def getCoalitions(db: Session, period_id: int) -> List[Dict[str, Any]]:
     """
-    Find all possible coalitions that have a majority of seats for a given period.
+    Find all minimal coalitions that have a majority of seats for a given period.
+    Filters out coalitions that are supersets of other successful coalitions.
     
     Args:
         db: Database session
         period_id: Period to analyze for coalitions
         
     Returns:
-        List of coalition dictionaries with party details and total seats
+        List of minimal coalition dictionaries with party details and total seats
     """
     # Get election results for the period
     election_results = get_items(db, ElectionResult, filters={"period_id": period_id})
@@ -521,8 +522,9 @@ def getCoalitions(db: Session, period_id: int) -> List[Dict[str, Any]]:
             }
     
     coalitions = []
+    minimal_coalition_party_sets = []
     
-    # Generate all possible combinations of parties (from 1 to all parties)
+    # Generate combinations starting with smallest size first
     for size in range(1, len(parties_with_seats) + 1):
         for combination in combinations(parties_with_seats, size):
             # Calculate total seats for this combination
@@ -530,48 +532,61 @@ def getCoalitions(db: Session, period_id: int) -> List[Dict[str, Any]]:
             
             # Check if coalition has majority
             if coalition_seats >= majority_threshold:
-                coalition_parties = []
-                party_ids_in_coalition = []
+                # Get party IDs for this coalition
+                current_party_ids = set(party.party_id for party in combination)
                 
-                for party in combination:
-                    party_info = party_details.get(party.party_id, {
-                        "name": f"Party {party.party_id}",
-                        "full_name": f"Party {party.party_id}",
-                        "color": "#525252"
-                    })
+                # Check if this coalition is a superset of any existing minimal coalition
+                is_superset = False
+                for minimal_set in minimal_coalition_party_sets:
+                    if minimal_set.issubset(current_party_ids) and minimal_set != current_party_ids:
+                        is_superset = True
+                        break
+                
+                # Only add if it's not a superset of an existing minimal coalition
+                if not is_superset:
+                    coalition_parties = []
+                    party_ids_in_coalition = []
                     
-                    coalition_parties.append({
-                        "party_id": party.party_id,
-                        "name": party_info["name"],
-                        "full_name": party_info["full_name"],
-                        "color": party_info["color"],
-                        "seats": party.seats,
-                        "percentage": party.percentage,
-                        "in_government": party.in_government,
-                        "head_of_government": party.head_of_government
-                    })
-                    party_ids_in_coalition.append(party.party_id)
-                
-                # Calculate average distance between all parties in the coalition
-                avg_distance = calculate_average_coalition_distance(party_ids_in_coalition, party_orientations)
-                
-                # Generate coalition name based on party names sorted by seat share
-                coalition_parties_sorted = sorted(coalition_parties, key=lambda x: x["seats"], reverse=True)
-                party_names = [party["name"] for party in coalition_parties_sorted]
-                coalition_name = "-".join(party_names) + " Coalition"
-                
-                coalition = {
-                    "coalition_id": len(coalitions) + 1,
-                    "coalition_name": coalition_name,
-                    "parties": coalition_parties,
-                    "total_seats": coalition_seats,
-                    "total_percentage": sum(party.percentage for party in combination),
-                    "party_count": len(combination),
-                    "majority_margin": coalition_seats - majority_threshold + 1,
-                    "average_distance": avg_distance
-                }
-                
-                coalitions.append(coalition)
+                    for party in combination:
+                        party_info = party_details.get(party.party_id, {
+                            "name": f"Party {party.party_id}",
+                            "full_name": f"Party {party.party_id}",
+                            "color": "#525252"
+                        })
+                        
+                        coalition_parties.append({
+                            "party_id": party.party_id,
+                            "name": party_info["name"],
+                            "full_name": party_info["full_name"],
+                            "color": party_info["color"],
+                            "seats": party.seats,
+                            "percentage": party.percentage,
+                            "in_government": party.in_government,
+                            "head_of_government": party.head_of_government
+                        })
+                        party_ids_in_coalition.append(party.party_id)
+                    
+                    # Calculate average distance between all parties in the coalition
+                    avg_distance = calculate_average_coalition_distance(party_ids_in_coalition, party_orientations)
+                    
+                    # Generate coalition name based on party names sorted by seat share
+                    coalition_parties_sorted = sorted(coalition_parties, key=lambda x: x["seats"], reverse=True)
+                    party_names = [party["name"] for party in coalition_parties_sorted]
+                    coalition_name = "-".join(party_names) + " Coalition"
+                    
+                    coalition = {
+                        "coalition_id": len(coalitions) + 1,
+                        "coalition_name": coalition_name,
+                        "parties": coalition_parties,
+                        "total_seats": coalition_seats,
+                        "total_percentage": sum(party.percentage for party in combination),
+                        "party_count": len(combination),
+                        "majority_margin": coalition_seats - majority_threshold + 1,
+                        "average_distance": avg_distance
+                    }
+                    
+                    coalitions.append(coalition)
+                    minimal_coalition_party_sets.append(current_party_ids)
     
     # Sort coalitions first by party count (ascending), then by average distance (ascending)
     coalitions.sort(key=lambda x: (x["party_count"], x["average_distance"]))
