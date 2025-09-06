@@ -20,6 +20,7 @@
 	let threshold = $state<number>(ELECTION_FIELD_META.threshold.defaultValue!);
 	let simulationResult = $state<SimulationResult | null>(null);
 	let electionResults = $state<EnrichedElectionResult[]>([]);
+	let previousElectionResults = $state<EnrichedElectionResult[] | null>(null);
 	let loading = $state(false);
 	let loadingResults = $state(false);
 	let error = $state<string | null>(null);
@@ -29,6 +30,12 @@
 		title: p.year.toString(), 
 		value: p.id?.toString() || '' 
 	})));
+
+	const selectedPeriodYear = $derived(() => {
+		if (!selectedPeriod || !periods.length) return '';
+		const period = periods.find(p => p.id?.toString() === selectedPeriod);
+		return period ? period.year.toString() : '';
+	});
 
 	// Prepare seat distribution data for Table component
 	const seatDistributionData = $derived(() => {
@@ -63,10 +70,44 @@
 			} else {
 				electionResults = [];
 			}
+			
+			// Load previous period results for comparison
+			await loadPreviousPeriodResults(periodId);
 		} catch (err) {
 			electionResults = [];
+			previousElectionResults = null;
 		} finally {
 			loadingResults = false;
+		}
+	}
+
+	async function loadPreviousPeriodResults(currentPeriodId: number) {
+		try {
+			// Find the previous period (next higher year)
+			const currentPeriod = periods.find(p => p.id === currentPeriodId);
+			if (!currentPeriod) {
+				previousElectionResults = null;
+				return;
+			}
+
+			// Sort periods by year and find the previous one
+			const sortedPeriods = [...periods].sort((a, b) => a.year - b.year);
+			const currentIndex = sortedPeriods.findIndex(p => p.id === currentPeriodId);
+			
+			if (currentIndex > 0) {
+				const previousPeriod = sortedPeriods[currentIndex - 1];
+				const response = await getEnrichedElectionResults(previousPeriod.id!);
+				
+				if (response.success && response.data && response.data.length > 0) {
+					previousElectionResults = response.data;
+				} else {
+					previousElectionResults = null;
+				}
+			} else {
+				previousElectionResults = null;
+			}
+		} catch (err) {
+			previousElectionResults = null;
 		}
 	}
 
@@ -163,7 +204,7 @@
 
 	<!-- Results -->
 	 <Column>
-	<Container title="Results">
+	<Container title="Election {selectedPeriodYear()}">
 		{#if loading}
 			<div class="flex items-center justify-center p-8">
 				<p class="text-dark">Running simulation...</p>
@@ -182,7 +223,7 @@
 				<!-- Election Results -->
 				{#if electionResults.length > 0}
 					<div>
-						<BarGraph {electionResults} {threshold} />
+						<BarGraph {electionResults} {threshold} {previousElectionResults} />
 					</div>
 				{/if}
 			</div>

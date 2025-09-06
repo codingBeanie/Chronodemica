@@ -13,16 +13,17 @@
     failure: string;
   }
 
-  const { electionResults, threshold, aspectRatio = 2.5 } = $props<{ 
+  const { electionResults, threshold, aspectRatio = 2.5, previousElectionResults = null } = $props<{ 
     electionResults: EnrichedElectionResult[]; 
     threshold: number; 
-    aspectRatio?: number; 
+    aspectRatio?: number;
+    previousElectionResults?: EnrichedElectionResult[] | null;
   }>();
 
   // Central configuration
   const PLOT_CONFIG = {
-    MARGIN: { t: 40, l: 40, r: 10, b: 40 } as const,
-    FONT_SIZE: { tick: 18, default: 16, title: 18, annotation: 22, percentage: 22 } as const,
+    MARGIN: { t: 0, l: 40, r: 10, b: 40 } as const,
+    FONT_SIZE: { tick: 18, default: 16, title: 18, annotation: 18, percentage: 22, change: 16 } as const,
     BAR_CONFIG: {
       opacity: 0.9,
       line: { width: 0 }
@@ -64,6 +65,41 @@
     containerHeight = containerWidth / aspectRatio;
   }
 
+  function calculatePeriodChanges(currentResults: EnrichedElectionResult[], previousResults: EnrichedElectionResult[] | null) {
+    if (!previousResults) return null;
+    
+    const changes: { [key: string]: string } = {};
+    
+    // Create lookup map for previous results by party name
+    const previousMap = new Map<string, number>();
+    previousResults.forEach(result => {
+      if (result.percentage !== null && result.percentage !== undefined) {
+        previousMap.set(result.party_name, result.percentage);
+      }
+    });
+    
+    // Calculate changes for current results
+    currentResults.forEach(result => {
+      if (result.percentage !== null && result.percentage !== undefined) {
+        const previousPercentage = previousMap.get(result.party_name);
+        
+        if (previousPercentage !== undefined) {
+          const change = result.percentage - previousPercentage;
+          if (Math.abs(change) < 0.1) {
+            changes[result.party_name] = "±0.0";
+          } else {
+            const sign = change > 0 ? "+" : "";
+            changes[result.party_name] = `${sign}${change.toFixed(1)}`;
+          }
+        } else {
+          changes[result.party_name] = "(-)";
+        }
+      }
+    });
+    
+    return changes;
+  }
+
 
   function createTrace(data: ElectionBarData, colors: ThemeColors) {
     return {
@@ -87,15 +123,18 @@
     const maxValue = Math.max(...data.y);
     const yAxisMax = maxValue * 1.2; // Reduce padding from 15% to 8%
     
+    // Calculate period changes
+    const changes = calculatePeriodChanges(electionResults, previousElectionResults);
+    
     return {
       xaxis: {
         tickangle: 0, // No rotation
-        tickfont: { size: PLOT_CONFIG.FONT_SIZE.tick, color: colors.dark },
+        tickfont: { size: PLOT_CONFIG.FONT_SIZE.tick, color: colors.darkAlt },
         ticklen: 10, // Length of tick marks
         tickcolor: 'transparent' // Hide tick marks to create visual space
       },
       yaxis: {
-        tickfont: { size: PLOT_CONFIG.FONT_SIZE.tick, color: colors.dark },
+        tickfont: { size: PLOT_CONFIG.FONT_SIZE.tick, color: colors.darkAlt },
         range: [0, yAxisMax]
       },
       showlegend: false,
@@ -113,7 +152,7 @@
           xref: 'paper',
           yref: 'y',
           line: {
-            color: colors.accent, // Use theme color instead of hardcoded failure color
+            color: colors.dark, // Use theme color instead of hardcoded failure color
             width: 2,
             opacity:1,
             dash: 'dash'
@@ -131,9 +170,9 @@
           xanchor: 'right',
           yanchor: 'top',
           showarrow: false,
-          font: { size: PLOT_CONFIG.FONT_SIZE.annotation, color: colors.dark, family: 'Noto Sans, sans-serif' },
-          bgcolor: colors.lightAlt,
-          bordercolor: colors.dark,
+          font: { size: PLOT_CONFIG.FONT_SIZE.annotation, color: colors.darkAlt, family: 'Noto Sans, sans-serif' },
+          bgcolor: colors.light,
+          bordercolor: colors.darkAlt,
           borderwidth: 0,
           borderpad: 12
         },
@@ -141,18 +180,36 @@
         ...data.x.map((_, index) => ({
           text: `<b>${data.text[index]}</b>`,
           x: index,
-          y: data.y[index] + (yAxisMax * 0.02), // Slightly above the bar
+          y: data.y[index] + (yAxisMax * 0.04), // Slightly above the bar
           xref: 'x',
           yref: 'y',
           xanchor: 'center',
           yanchor: 'bottom',
           showarrow: false,
-          font: { size: PLOT_CONFIG.FONT_SIZE.percentage, color: colors.dark, family: 'Noto Sans, sans-serif' },
+          font: { size: PLOT_CONFIG.FONT_SIZE.percentage, color: colors.darkAlt, family: 'Noto Sans, sans-serif' },
           bgcolor: colors.light,
           bordercolor: colors.light,
           borderwidth: 1,
           borderpad: 4
-        }))
+        })),
+        // Change indicators below percentages (only if changes exist)
+        ...(changes ? data.x.map((_, index) => {
+          const partyName = data.x[index];
+          const changeText = changes[partyName] || "(-)";
+          return {
+            text: changeText,
+            x: index,
+            y: data.y[index] + (yAxisMax * -0.0), // Below the percentage label
+            xref: 'x',
+            yref: 'y',
+            xanchor: 'center',
+            yanchor: 'bottom',
+            showarrow: false,
+            font: { size: PLOT_CONFIG.FONT_SIZE.change, color: colors.darkAlt, family: 'Noto Sans, sans-serif' },
+            bgcolor: 'transparent',
+            borderwidth: 0
+          };
+        }) : [])
       ]
     };
   }
