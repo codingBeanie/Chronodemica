@@ -69,6 +69,7 @@ def create_pop(pop: Pop, db: Session = Depends(get_session)):
 
 @router.get("/pop/", response_model=List[Pop])
 def read_pops(
+    period_id: Optional[int] = Query(None, description="Period ID to filter valid pops (optional)"),
     skip: int = 0, 
     limit: int = 100, 
     sort_by: Optional[str] = None,
@@ -76,10 +77,42 @@ def read_pops(
     name: Optional[str] = Query(None),
     db: Session = Depends(get_session)
 ):
-    filters = {}
+    from sqlmodel import select
+    
+    # Build the base query
+    statement = select(Pop)
+    
+    # Apply period-based validation only if period_id is provided
+    if period_id is not None:
+        # Get the period to retrieve the year
+        period = crud.get_item(db, Period, period_id)
+        if not period:
+            raise HTTPException(status_code=404, detail="Period not found")
+        
+        # Add period-based validation
+        statement = statement.where(
+            # Check valid_from: NULL means no start limit, otherwise year must be >= valid_from
+            (Pop.valid_from.is_(None)) | (period.year >= Pop.valid_from),
+            # Check valid_until: NULL means no end limit, otherwise year must be < valid_until  
+            (Pop.valid_until.is_(None)) | (period.year < Pop.valid_until)
+        )
+    
+    # Apply name filter if provided
     if name is not None:
-        filters["name"] = name
-    return crud.get_items(db, Pop, skip, limit, filters, sort_by, sort_direction)
+        statement = statement.where(Pop.name == name)
+    
+    # Apply sorting
+    if sort_by and hasattr(Pop, sort_by):
+        column = getattr(Pop, sort_by)
+        if sort_direction.lower() == "desc":
+            statement = statement.order_by(column.desc())
+        else:
+            statement = statement.order_by(column.asc())
+    
+    # Apply pagination
+    statement = statement.offset(skip).limit(limit)
+    
+    return db.exec(statement).all()
 
 @router.get("/pop/{pop_id}", response_model=Pop)
 def read_pop(pop_id: int, db: Session = Depends(get_session)):
@@ -148,6 +181,7 @@ def create_party(party: Party, db: Session = Depends(get_session)):
 
 @router.get("/party/", response_model=List[Party])
 def read_parties(
+    period_id: Optional[int] = Query(None, description="Period ID to filter valid parties (optional)"),
     skip: int = 0, 
     limit: int = 100, 
     sort_by: Optional[str] = None,
@@ -155,10 +189,42 @@ def read_parties(
     name: Optional[str] = Query(None),
     db: Session = Depends(get_session)
 ):
-    filters = {}
+    from sqlmodel import select
+    
+    # Build the base query
+    statement = select(Party)
+    
+    # Apply period-based validation only if period_id is provided
+    if period_id is not None:
+        # Get the period to retrieve the year
+        period = crud.get_item(db, Period, period_id)
+        if not period:
+            raise HTTPException(status_code=404, detail="Period not found")
+        
+        # Add period-based validation
+        statement = statement.where(
+            # Check valid_from: NULL means no start limit, otherwise year must be >= valid_from
+            (Party.valid_from.is_(None)) | (period.year >= Party.valid_from),
+            # Check valid_until: NULL means no end limit, otherwise year must be < valid_until  
+            (Party.valid_until.is_(None)) | (period.year < Party.valid_until)
+        )
+    
+    # Apply name filter if provided
     if name is not None:
-        filters["name"] = name
-    return crud.get_items(db, Party, skip, limit, filters, sort_by, sort_direction)
+        statement = statement.where(Party.name == name)
+    
+    # Apply sorting
+    if sort_by and hasattr(Party, sort_by):
+        column = getattr(Party, sort_by)
+        if sort_direction.lower() == "desc":
+            statement = statement.order_by(column.desc())
+        else:
+            statement = statement.order_by(column.asc())
+    
+    # Apply pagination
+    statement = statement.offset(skip).limit(limit)
+    
+    return db.exec(statement).all()
 
 @router.get("/party/{party_id}", response_model=Party)
 def read_party(party_id: int, db: Session = Depends(get_session)):

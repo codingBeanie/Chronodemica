@@ -11,6 +11,8 @@ class Pop(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
+    valid_from: int | None = Field(default=None)
+    valid_until: int | None = Field(default=None)
 
 
 class PopPeriod(SQLModel, table=True):
@@ -34,6 +36,8 @@ class Party(SQLModel, table=True):
     name: str = Field(unique=True)
     full_name: str | None
     color: str | None = Field(default="#525252")
+    valid_from: int | None = Field(default=None)
+    valid_until: int | None = Field(default=None)
 
 
 class PartyPeriod(SQLModel, table=True):

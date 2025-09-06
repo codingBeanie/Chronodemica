@@ -111,6 +111,15 @@
         }
       }
       
+      // Check number field format for int type fields
+      if (typedFieldInfo.type.includes('int') && value !== null && value !== undefined && value !== '') {
+        const numValue = Number(value);
+        if (isNaN(numValue) || !isFinite(numValue)) {
+          fieldErrors[fieldName] = 'Please enter a valid number';
+          isValid = false;
+        }
+      }
+      
       // Check color field format
       if (fieldName === 'color' && value && typeof value === 'string') {
         if (!isValidHexColor(value.trim())) {

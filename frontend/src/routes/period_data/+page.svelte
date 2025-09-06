@@ -138,10 +138,9 @@
 
 	// Load initial data
 	onMount(async () => {
-		const [periodResult, popResult, partyResult] = await Promise.all([
+		const [periodResult, popResult] = await Promise.all([
 			API.getAll<Period>('Period', 0, 100, 'year', 'descending'),
-			API.getAll<Pop>('Pop', 0, 100, 'name', 'ascending'),
-			API.getAll<Party>('Party', 0, 100, 'name', 'ascending')
+			API.getAll<Pop>('Pop', 0, 100, 'name', 'ascending')
 		]);
 
 		if (periodResult.success && periodResult.data) {
@@ -151,9 +150,28 @@
 			}
 		}
 		if (popResult.success && popResult.data) pops = popResult.data;
-		if (partyResult.success && partyResult.data) parties = partyResult.data;
 		
 		selectedObject = getFirstObjectId(currentObjects);
+	});
+
+	// Load pops and parties when selectedPeriod changes
+	$effect(() => {
+		if (selectedPeriod) {
+			console.log('Loading data for period:', selectedPeriod);
+			Promise.all([
+				API.getAll<Pop>('Pop', 0, 100, 'name', 'ascending', undefined, parseInt(selectedPeriod)),
+				API.getAll<Party>('Party', 0, 100, 'name', 'ascending', undefined, parseInt(selectedPeriod))
+			]).then(([popResult, partyResult]) => {
+				if (popResult.success && popResult.data) {
+					console.log('Loaded pops:', popResult.data.map(p => p.name));
+					pops = popResult.data;
+				}
+				if (partyResult.success && partyResult.data) {
+					console.log('Loaded parties:', partyResult.data.map(p => p.name));
+					parties = partyResult.data;
+				}
+			});
+		}
 	});
 
 	// Reset object selection when data model changes

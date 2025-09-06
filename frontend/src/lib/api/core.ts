@@ -97,9 +97,15 @@ export const API = {
     limit: number = 100, 
     sortBy?: string, 
     sortDirection?: 'ascending' | 'descending',
-    filters?: Record<string, any>
+    filters?: Record<string, any>,
+    periodId?: number
   ): Promise<ApiResponse<T[]>> {
     let endpoint = `/${MODEL_ENDPOINTS[model]}?skip=${skip}&limit=${limit}`;
+    
+    // Add period_id parameter for temporal filtering (Pop and Party models)
+    if (periodId !== undefined && (model === 'Pop' || model === 'Party')) {
+      endpoint += `&period_id=${periodId}`;
+    }
     
     if (sortBy && sortDirection) {
       const direction = sortDirection === 'descending' ? 'desc' : 'asc';
