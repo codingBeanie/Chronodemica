@@ -37,12 +37,13 @@
 	let isPopPeriod = $derived('pop_id' in data);
 	let dataModelType = $derived(isPopPeriod ? 'PopPeriod' : 'PartyPeriod');
 	let fieldMetaObject = $derived(isPopPeriod ? POP_PERIOD_FIELD_META : PARTY_PERIOD_FIELD_META);
-	let displayFields = $derived(
-		Object.keys(fieldMetaObject)
-			.filter(key => data.hasOwnProperty(key))
-			.map(key => ({ key, meta: getFieldMeta(key, dataModelType)! }))
-	);
+	let displayFields = $derived(getDisplayFields(fieldMetaObject, data));
 	let saveDisabled = $derived(!unsavedChanges);
+
+	// Configuration
+	const FIELD_DISPLAY_CONFIG = {
+		EXCLUDED_FIELDS: ['id', 'period_id', 'pop_id', 'party_id']
+	};
 
 	// Utility functions
 	function formatFieldName(key: string): string {
@@ -51,6 +52,12 @@
 
 	function deepClone<T>(obj: T): T {
 		return JSON.parse(JSON.stringify(obj));
+	}
+
+	function getDisplayFields(fieldMeta: any, dataObj: any) {
+		return Object.keys(fieldMeta)
+			.filter(key => dataObj.hasOwnProperty(key))
+			.map(key => ({ key, meta: getFieldMeta(key, dataModelType)! }));
 	}
 
 	function getPreviousValue(fieldKey: string): string | undefined {
@@ -113,23 +120,12 @@
 		}
 
 		try {
-			let result;
-			if (action === 'save') {
-				result = await API.update(dataModelType as any, data.id, data);
-			} else {
-				result = await API.delete(dataModelType as any, data.id);
-			}
+			const result = action === 'save' 
+				? await API.update(dataModelType as any, data.id, data)
+				: await API.delete(dataModelType as any, data.id);
 			
 			if (result.success) {
-				if (action === 'save') {
-					if (result.data) Object.assign(data, result.data);
-					resetChangeTracking();
-				} else {
-					data = null as any;
-					originalData = null;
-					unsavedChanges = false;
-				}
-				console.log(`Data ${action}d successfully`);
+				await handleSuccessfulAction(action, result.data);
 				onAction?.(action, true);
 			} else {
 				console.error(`Failed to ${action} data:`, result.error);
@@ -141,39 +137,75 @@
 		}
 	}
 
+	async function handleSuccessfulAction(action: ApiAction, resultData?: any): Promise<void> {
+		if (action === 'save') {
+			if (resultData) Object.assign(data, resultData);
+			resetChangeTracking();
+		} else {
+			data = null as any;
+			originalData = null;
+			unsavedChanges = false;
+		}
+		console.log(`Data ${action}d successfully`);
+	}
+
 	const handleSave = () => performApiAction('save');
 	const handleDelete = () => performApiAction('delete');
+
+	function renderFieldComponent(field: any) {
+		const commonProps = {
+			id: `${dataModelType}-${field.key}`,
+			label: formatFieldName(field.key),
+			hint: field.meta.hint
+		};
+
+		if (field.meta.type === 'input') {
+			return {
+				component: Input,
+				props: {
+					...commonProps,
+					value: (data as any)[field.key],
+					type: "number",
+					caption: getPreviousValue(field.key)
+				}
+			};
+		} else {
+			return {
+				component: Slider,
+				props: {
+					...commonProps,
+					title: commonProps.label,
+					value: (data as any)[field.key],
+					min: field.meta.min,
+					max: field.meta.max,
+					step: field.meta.step || 1,
+					caption: getCombinedCaption(field.key)
+				}
+			};
+		}
+	}
 </script>
 
 <div class="mt-8">
 	<!-- PARAMETERS: Field controls -->
 	<Grid cols="1fr 1fr" gap="gap-4">
-	{#each displayFields as field}
-		{#if field.meta.type === 'input'}
-			<Input
-				id="{dataModelType}-{field.key}"
-				label={formatFieldName(field.key)}
-				bind:value={(data as any)[field.key]}
-				type="number"
-				hint={field.meta.hint}
-				caption={getPreviousValue(field.key)}
-			/>
-		{:else}
-			<Slider
-				id="{dataModelType}-{field.key}"
-				title={formatFieldName(field.key)}
-				bind:value={(data as any)[field.key]}
-				min={field.meta.min}
-				max={field.meta.max}
-				step={field.meta.step || 1}
-				hint={field.meta.hint}
-				caption={getCombinedCaption(field.key)}
-			/>
-		{/if}
-	{/each}
+		{#each displayFields as field}
+			{@const fieldComponent = renderFieldComponent(field)}
+			{#if fieldComponent.component === Input}
+				<Input
+					{...fieldComponent.props}
+					bind:value={(data as any)[field.key]}
+				/>
+			{:else}
+				<Slider
+					{...fieldComponent.props}
+					bind:value={(data as any)[field.key]}
+				/>
+			{/if}
+		{/each}
 	</Grid>
 	
-	<!-- FOOTER: Delete button -->
+	<!-- FOOTER: Action buttons -->
 	<div class="flex justify-end items-center gap-4 mt-6">
 		{#if unsavedChanges}
 			<span class="text-lg text-accent font-medium">Unsaved changes detected. Don't forget to save.</span>
@@ -185,10 +217,10 @@
 			onclick={handleDelete}
 		/>
 		<Button 
-		text="Save" 
-		theme="accent"
-		disabled={saveDisabled}
-		onclick={handleSave}
-	/>
+			text="Save" 
+			theme="accent"
+			disabled={saveDisabled}
+			onclick={handleSave}
+		/>
 	</div>
 </div>

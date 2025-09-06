@@ -36,9 +36,28 @@
   let sortColumn = $state<string | null>(null);
   let sortDirection = $state<SortDirection>('ascending');
   
+  // Configuration
+  const TABLE_CONFIG = {
+    SPECIAL_COLUMNS: {
+      PERCENTAGE_CHANGE: '% change',
+      COLOR: 'color'
+    },
+    SPECIAL_PARTY_FIELDS: {
+      IN_GOVERNMENT: 'in_government'
+    },
+    DEFAULT_PARTY_COLOR: '#525252',
+    ICONS: {
+      SORT_NEUTRAL: 'bi bi-arrow-down-up',
+      SORT_ASC: 'bi bi-arrow-up', 
+      SORT_DESC: 'bi bi-arrow-down',
+      GOVERNMENT: 'bi bi-bank2',
+      EDIT: 'bi bi-pencil-square',
+      DELETE: 'bi bi-trash3'
+    }
+  };
+
   // Style configuration
-  const getStyles = (mode: string) => ({
-    // Layout styles
+  const STYLE_CONFIG = {
     wrapper: 'w-full',
     scrollWrapper: 'overflow-x-auto w-full',
     table: mode === 'simple' ? 'w-full table-auto' : 'min-w-full table-auto',
@@ -76,27 +95,40 @@
     colorWrapper: 'flex items-center space-x-2',
     colorSwatch: 'w-6 h-6 border border-light-alt rounded flex-shrink-0',
     colorText: 'font-mono text-sm text-dark-alt'
-  });
-  
-  const styles = getStyles(mode);
-  
-  // Utility functions
-  const getAlignment = (value: any, header: string): string => 
-    typeof value === 'number' || header === '% change' ? 'text-right' : 'text-left';
-  
-  const getHeaderAlignment = (header: string): string => 
-    (data.length > 0 && typeof data[0][header] === 'number') || header === '% change' ? 'text-right' : 'text-left';
-  
-  const getSortIcon = (column: string): string => {
-    if (sortColumn !== column) return 'bi bi-arrow-down-up';
-    return sortDirection === 'ascending' ? 'bi bi-arrow-up' : 'bi bi-arrow-down';
   };
+
+  // Computed values
+  let hasData = $derived(data.length > 0);
+  let isSimpleMode = $derived(mode === 'simple');
+  let isCrudMode = $derived(mode === 'crud');
+  let tableClasses = $derived(getTableClasses());
+
+  // Utility functions
+  function getAlignment(value: any, header: string): string {
+    return typeof value === 'number' || header === TABLE_CONFIG.SPECIAL_COLUMNS.PERCENTAGE_CHANGE 
+      ? 'text-right' 
+      : 'text-left';
+  }
   
-  const formatHeaderText = (header: string): string => 
-    header.replace(/_/g, ' ').toUpperCase();
+  function getHeaderAlignment(header: string): string {
+    return (hasData && typeof data[0][header] === 'number') || header === TABLE_CONFIG.SPECIAL_COLUMNS.PERCENTAGE_CHANGE 
+      ? 'text-right' 
+      : 'text-left';
+  }
+  
+  function getSortIcon(column: string): string {
+    if (sortColumn !== column) return TABLE_CONFIG.ICONS.SORT_NEUTRAL;
+    return sortDirection === 'ascending' 
+      ? TABLE_CONFIG.ICONS.SORT_ASC 
+      : TABLE_CONFIG.ICONS.SORT_DESC;
+  }
+  
+  function formatHeaderText(header: string): string {
+    return header.replace(/_/g, ' ').toUpperCase();
+  }
   
   // Comparison utility for sorting
-  const compareValues = (a: any, b: any): number => {
+  function compareValues(a: any, b: any): number {
     if (a == null && b == null) return 0;
     if (a == null) return 1;
     if (b == null) return -1;
@@ -108,10 +140,10 @@
       return a - b;
     }
     return String(a).localeCompare(String(b));
-  };
+  }
   
   // Data management
-  const loadTableData = async (loadStructure = false) => {
+  async function loadTableData(loadStructure = false) {
     if (!model) return;
     
     if (loadStructure) {
@@ -135,17 +167,17 @@
     }
     
     loading = false;
-  };
+  }
   
-  const sortExternalData = (column: string, direction: SortDirection) => {
+  function sortExternalData(column: string, direction: SortDirection) {
     data = [...data].sort((a, b) => {
       const comparison = compareValues(a[column], b[column]);
       return direction === 'descending' ? -comparison : comparison;
     });
-  };
+  }
   
   // Event handlers
-  const toggleSort = (column: string) => {
+  function toggleSort(column: string) {
     if (sortColumn === column) {
       sortDirection = sortDirection === 'ascending' ? 'descending' : 'ascending';
     } else {
@@ -153,26 +185,26 @@
       sortDirection = 'ascending';
     }
     
-    if (mode === 'simple') {
+    if (isSimpleMode) {
       sortExternalData(column, sortDirection);
     } else {
       loadTableData();
     }
-  };
+  }
   
-  const handleModal = (action: 'open' | 'close', type?: ModalType, data?: any) => {
+  function handleModal(action: 'open' | 'close', type?: ModalType, modalData?: any) {
     if (action === 'open') {
       modalType = type!;
-      editData = data || null;
+      editData = modalData || null;
       isModalActive = true;
     } else {
       isModalActive = false;
       editData = null;
       loadTableData();
     }
-  };
+  }
   
-  const handleDelete = async (row: any) => {
+  async function handleDelete(row: any) {
     if (!row.id || !confirm('Are you sure you want to delete this item?')) return;
     
     const result = await API.delete(model as any, row.id);
@@ -181,12 +213,55 @@
     } else {
       console.error('Error deleting item:', result.error);
     }
-  };
+  }
+
+  // Cell rendering functions
+  function renderColorCell(value: string) {
+    return {
+      wrapper: STYLE_CONFIG.colorWrapper,
+      swatch: STYLE_CONFIG.colorSwatch,
+      text: STYLE_CONFIG.colorText,
+      value: value
+    };
+  }
+
+  function renderPartyCell(row: any, header: string) {
+    const hasGovernmentStatus = row[TABLE_CONFIG.SPECIAL_PARTY_FIELDS.IN_GOVERNMENT] !== undefined;
+    const isInGovernment = row[TABLE_CONFIG.SPECIAL_PARTY_FIELDS.IN_GOVERNMENT];
+    const isHeadOfGovernment = row.head_of_government;
+    
+    return {
+      hasIcon: hasGovernmentStatus && isInGovernment,
+      iconClass: TABLE_CONFIG.ICONS.GOVERNMENT,
+      iconTitle: isHeadOfGovernment ? "Head of Government" : "In Government",
+      value: row[header] ?? '-'
+    };
+  }
+
+  function getTableClasses() {
+    return {
+      wrapper: STYLE_CONFIG.wrapper,
+      scrollWrapper: STYLE_CONFIG.scrollWrapper,
+      table: STYLE_CONFIG.table,
+      buttonGroup: STYLE_CONFIG.buttonGroup
+    };
+  }
+
+  function getHeaderClasses(index: number, isLast: boolean) {
+    const baseClass = isLast ? STYLE_CONFIG.thLast : STYLE_CONFIG.thBase;
+    const alignmentClass = getHeaderAlignment(headers[index]);
+    return `${baseClass} ${alignmentClass}`;
+  }
+
+  function getCellClasses(index: number, isLast: boolean, value: any, header: string) {
+    const baseClass = isLast ? STYLE_CONFIG.tdLast : STYLE_CONFIG.tdBase;
+    const alignmentClass = getAlignment(value, header);
+    return `${baseClass} ${alignmentClass}`;
+  }
   
   // Reactive data initialization
   $effect(() => {
-    if (mode === 'simple') {
-      // Always update data when externalData changes, even if empty
+    if (isSimpleMode) {
       data = externalData;
       headers = externalHeaders.length > 0 ? externalHeaders : Object.keys(externalData[0] || {});
       loading = false;
@@ -196,16 +271,16 @@
         sortColumn = null;
         sortDirection = 'ascending';
       }
-    } else if (model && mode === 'crud') {
+    } else if (model && isCrudMode) {
       loadTableData(true);
     }
   });
 </script>
 
-<div class={styles.wrapper}>
+<div class={tableClasses.wrapper}>
   <!-- Action Bar - CRUD mode only -->
-  {#if mode === 'crud'}
-    <div class={styles.buttonGroup}>
+  {#if isCrudMode}
+    <div class={tableClasses.buttonGroup}>
       <Button 
         text="New Entry" 
         type="text" 
@@ -217,80 +292,80 @@
   
   <!-- Loading state -->
   {#if loading}
-    <div class={styles.loading}>Loading...</div>
+    <div class={STYLE_CONFIG.loading}>Loading...</div>
   
   <!-- Empty state -->
-  {:else if data.length === 0}
-    <div class={styles.noData}>No data available</div>
+  {:else if !hasData}
+    <div class={STYLE_CONFIG.noData}>No data available</div>
   
   <!-- Table content -->
   {:else}
-    <div class={styles.scrollWrapper}>
-      <table class={styles.table}>
+    <div class={tableClasses.scrollWrapper}>
+      <table class={tableClasses.table}>
         <!-- Table Header -->
-        <thead class={styles.thead}>
+        <thead class={STYLE_CONFIG.thead}>
           <tr>
             {#each headers as header, index}
-              <th class="{index === headers.length - 1 ? styles.thLast : styles.thBase} {getHeaderAlignment(header)}">
+              {@const isLast = index === headers.length - 1}
+              <th class={getHeaderClasses(index, isLast)}>
                 <button
                   onclick={() => toggleSort(header)}
-                  class="{styles.headerButton} {getHeaderAlignment(header)} w-full"
+                  class="{STYLE_CONFIG.headerButton} {getHeaderAlignment(header)} w-full"
                   aria-label="Sort by {formatHeaderText(header)}"
                 >
-                  <i class="{getSortIcon(header)} {sortColumn === header ? 'text-dark-alt' : 'text-dark'} {styles.sortIcon}"></i>
+                  <i class="{getSortIcon(header)} {sortColumn === header ? 'text-dark-alt' : 'text-dark'} {STYLE_CONFIG.sortIcon}"></i>
                   <span>{formatHeaderText(header)}</span>
                 </button>
               </th>
             {/each}
             
-            {#if mode === 'crud'}
-              <th class={styles.thActions}>Actions</th>
+            {#if isCrudMode}
+              <th class={STYLE_CONFIG.thActions}>Actions</th>
             {/if}
           </tr>
         </thead>
         
         <!-- Table Body -->
-        <tbody class={styles.tbody}>
-          {#each data as row, index (mode === 'simple' ? index : row.id)}
-            <tr class={styles.trBody}>
+        <tbody class={STYLE_CONFIG.tbody}>
+          {#each data as row, index (isSimpleMode ? index : row.id)}
+            <tr class={STYLE_CONFIG.trBody}>
               {#each headers as header, cellIndex}
-                <td class="{cellIndex === headers.length - 1 ? styles.tdLast : styles.tdBase} {getAlignment(row[header], header)}">
-                  {#if header === 'color' && row[header]}
-                    <!-- Special color display -->
-                    <div class={styles.colorWrapper}>
+                {@const isLast = cellIndex === headers.length - 1}
+                <td class={getCellClasses(cellIndex, isLast, row[header], header)}>
+                  {#if header === TABLE_CONFIG.SPECIAL_COLUMNS.COLOR && row[header]}
+                    {@const colorData = renderColorCell(row[header])}
+                    <div class={colorData.wrapper}>
                       <div 
-                        class={styles.colorSwatch}
-                        style="background-color: {row[header]}"
+                        class={colorData.swatch}
+                        style="background-color: {colorData.value}"
                       ></div>
-                      <span class={styles.colorText}>{row[header]}</span>
+                      <span class={colorData.text}>{colorData.value}</span>
                     </div>
-                  {:else if header === 'party_name' && row.in_government !== undefined}
-                    <!-- Party name with government icon -->
+                  {:else if header === 'party_name' && row[TABLE_CONFIG.SPECIAL_PARTY_FIELDS.IN_GOVERNMENT] !== undefined}
+                    {@const partyData = renderPartyCell(row, header)}
                     <div class="flex items-center gap-1">
-                      {#if row.in_government}
-                        <i class="bi bi-bank2 text-accent" title={row.head_of_government ? "Head of Government" : "In Government"}></i>
+                      {#if partyData.hasIcon}
+                        <i class="{partyData.iconClass} text-accent" title={partyData.iconTitle}></i>
                       {/if}
-                      {row[header] ?? '-'}
+                      {partyData.value}
                     </div>
                   {:else}
-                    <!-- Regular cell content -->
                     {row[header] ?? '-'}
                   {/if}
                 </td>
               {/each}
               
-              {#if mode === 'crud'}
-                <!-- Action buttons -->
-                <td class={styles.tdActions}>
-                  <div class={styles.actionButtons}>
+              {#if isCrudMode}
+                <td class={STYLE_CONFIG.tdActions}>
+                  <div class={STYLE_CONFIG.actionButtons}>
                     <Button 
-                      icon="bi bi-pencil-square"
+                      icon={TABLE_CONFIG.ICONS.EDIT}
                       type="icon"
                       theme="light" 
                       onclick={() => handleModal('open', 'edit', row)} 
                     />
                     <Button 
-                      icon="bi bi-trash3"
+                      icon={TABLE_CONFIG.ICONS.DELETE}
                       type="icon"
                       theme="light" 
                       onclick={() => handleDelete(row)} 
@@ -306,7 +381,7 @@
   {/if}
 
   <!-- Modal - CRUD mode only -->
-  {#if mode === 'crud'}
+  {#if isCrudMode}
     <ModalData 
       active={isModalActive}
       datamodel={model}
