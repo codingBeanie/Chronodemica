@@ -1,5 +1,6 @@
 import { API, type PopPeriod, type PartyPeriod, type Pop, type Party } from '../core';
 import type { EnrichedElectionResult } from './simulation';
+import { getVotingBehavior } from './simulation';
 
 const SCALING_CONFIG = {
   PARTY_BASE_SIZE: 5,
@@ -173,4 +174,226 @@ export function processElectionResults(results: EnrichedElectionResult[]): Elect
     colors: finalResults.map(r => r.party_color || "#525252"), // Use actual party colors
     voterTurnout: voterTurnout
   };
+}
+
+export interface LineGraphTrace {
+  name: string;
+  x: string[];
+  y: (number | null)[];
+  color: string;
+  party_id: number;
+}
+
+export interface LineGraphData {
+  traces: LineGraphTrace[];
+  periods: string[];
+}
+
+interface Period {
+  id: number;
+  year: number;
+}
+
+interface PartyInfo {
+  id: number;
+  name: string;
+  color?: string;
+  valid_from?: number;
+  valid_until?: number;
+}
+
+// Helper function to fetch and sort periods
+async function fetchSortedPeriods(): Promise<Period[]> {
+  const periodsResponse = await API.getAll('Period');
+  if (!periodsResponse.success || !periodsResponse.data) {
+    throw new Error('Failed to fetch periods');
+  }
+  
+  const periods = periodsResponse.data as Period[];
+  return periods.sort((a, b) => a.year - b.year);
+}
+
+// Helper function to fetch parties
+async function fetchParties(): Promise<PartyInfo[]> {
+  const partiesResponse = await API.getAll('Party');
+  if (!partiesResponse.success || !partiesResponse.data) {
+    throw new Error('Failed to fetch parties');
+  }
+  
+  return partiesResponse.data as PartyInfo[];
+}
+
+// Helper function to check if party was valid in a given period
+function isPartyValidInPeriod(party: PartyInfo, period: Period): boolean {
+  return (!party.valid_from || period.year >= party.valid_from) && 
+         (!party.valid_until || period.year <= party.valid_until);
+}
+
+// Helper function to create party map for quick lookups
+function createPartyMap(parties: PartyInfo[]): Map<string, PartyInfo> {
+  const partyMap = new Map<string, PartyInfo>();
+  parties.forEach(party => {
+    partyMap.set(party.name, party);
+  });
+  return partyMap;
+}
+
+// Helper function to build trace for a party
+function buildPartyTrace(party: PartyInfo, periods: Period[], getData: (period: Period, party: PartyInfo) => number | null): LineGraphTrace {
+  const trace: LineGraphTrace = {
+    name: party.name,
+    x: [],
+    y: [],
+    color: party.color || '#525252',
+    party_id: party.id
+  };
+  
+  for (const period of periods) {
+    if (!isPartyValidInPeriod(party, period)) {
+      console.log(`buildPartyTrace - ${party.name} not valid in ${period.year}, skipping`);
+      continue;
+    }
+    
+    trace.x.push(period.year.toString());
+    const value = getData(period, party);
+    trace.y.push(value);
+    
+    console.log(`buildPartyTrace - ${party.name} in ${period.year}: ${value !== null ? value + '%' : 'null (gap)'}`);
+  }
+  
+  return trace;
+}
+
+export async function getPartyResultsOverTime(partyId?: number): Promise<LineGraphData> {
+  try {
+    console.log('getPartyResultsOverTime - Starting fetch for partyId:', partyId);
+    
+    // Fetch periods and parties
+    const [sortedPeriods, allParties] = await Promise.all([
+      fetchSortedPeriods(),
+      fetchParties()
+    ]);
+    
+    console.log('getPartyResultsOverTime - Sorted periods:', sortedPeriods);
+    
+    const parties = partyId ? allParties.filter(p => p.id === partyId) : allParties;
+    console.log('getPartyResultsOverTime - Parties to process:', parties.map(p => `${p.name} (id: ${p.id})`));
+    
+    // Fetch election results for all periods
+    const periodElectionData: { [periodId: number]: any[] } = {};
+    
+    for (const period of sortedPeriods) {
+      console.log(`getPartyResultsOverTime - Fetching results for period ${period.id} (${period.year})`);
+      const resultsResponse = await API.getAll('ElectionResult', 0, 100, undefined, undefined, { period_id: period.id });
+      
+      periodElectionData[period.id] = resultsResponse.success && resultsResponse.data ? resultsResponse.data : [];
+      console.log(`getPartyResultsOverTime - Period ${period.year}: ${periodElectionData[period.id].length} results`);
+    }
+    
+    // Build traces
+    const traces: LineGraphTrace[] = [];
+    
+    for (const party of parties) {
+      console.log(`getPartyResultsOverTime - Processing party: ${party.name} (id: ${party.id})`);
+      
+      const trace = buildPartyTrace(party, sortedPeriods, (period, party) => {
+        const periodResults = periodElectionData[period.id] || [];
+        const partyResult = periodResults.find((result: any) => result.party_id === party.id);
+        return partyResult ? (partyResult.percentage || 0) : null;
+      });
+      
+      if (trace.x.length > 0) {
+        traces.push(trace);
+        console.log(`getPartyResultsOverTime - Added trace for ${party.name} with ${trace.x.length} data points:`, trace.y);
+      }
+    }
+    
+    console.log('getPartyResultsOverTime - Final traces summary:', traces.map(t => `${t.name}: [${t.y.join(', ')}]`));
+    
+    return {
+      traces: traces,
+      periods: sortedPeriods.map(p => p.year.toString())
+    };
+  } catch (error) {
+    console.error('Error fetching party results over time:', error);
+    return { traces: [], periods: [] };
+  }
+}
+
+export async function getPopulationVotingBehavior(popId: number): Promise<LineGraphData> {
+  try {
+    console.log('getPopulationVotingBehavior - Starting fetch for popId:', popId);
+    
+    // Fetch periods and parties
+    const [sortedPeriods, allParties] = await Promise.all([
+      fetchSortedPeriods(),
+      fetchParties()
+    ]);
+    
+    console.log('getPopulationVotingBehavior - Sorted periods:', sortedPeriods);
+    
+    // Create party map for quick lookups
+    const partyMap = createPartyMap(allParties);
+    console.log('getPopulationVotingBehavior - Party mapping created:', Array.from(partyMap.keys()));
+    
+    // Fetch voting behavior data for all periods
+    const periodVotingBehaviorData: { [periodId: number]: any[] } = {};
+    
+    for (const period of sortedPeriods) {
+      console.log(`getPopulationVotingBehavior - Fetching voting behavior for period ${period.id} (${period.year})`);
+      const behaviorResponse = await getVotingBehavior(period.id, popId);
+      
+      periodVotingBehaviorData[period.id] = behaviorResponse.success && behaviorResponse.data ? behaviorResponse.data : [];
+      console.log(`getPopulationVotingBehavior - Period ${period.year}: ${periodVotingBehaviorData[period.id].length} voting behavior entries`);
+    }
+    
+    // Extract unique parties from voting behavior data
+    const allPartyNames = new Set<string>();
+    Object.values(periodVotingBehaviorData).forEach(periodData => {
+      periodData.forEach((entry: any) => {
+        if (entry.party_name) {
+          allPartyNames.add(entry.party_name);
+        }
+      });
+    });
+    
+    console.log('getPopulationVotingBehavior - Unique parties found:', Array.from(allPartyNames));
+    
+    // Build traces
+    const traces: LineGraphTrace[] = [];
+    
+    for (const partyName of allPartyNames) {
+      console.log(`getPopulationVotingBehavior - Processing party: ${partyName}`);
+      
+      const partyInfo = partyMap.get(partyName);
+      const fakeParty: PartyInfo = {
+        id: partyInfo?.id || 0,
+        name: partyName,
+        color: partyInfo?.color,
+        valid_from: partyInfo?.valid_from,
+        valid_until: partyInfo?.valid_until
+      };
+      
+      const trace = buildPartyTrace(fakeParty, sortedPeriods, (period, party) => {
+        const periodData = periodVotingBehaviorData[period.id] || [];
+        const partyBehavior = periodData.find((entry: any) => entry.party_name === party.name);
+        return (partyBehavior && partyBehavior.percentage !== undefined) ? (partyBehavior.percentage || 0) : null;
+      });
+      
+      if (trace.x.length > 0) {
+        traces.push(trace);
+        console.log(`getPopulationVotingBehavior - Added trace for ${partyName} with ${trace.x.length} data points:`, trace.y);
+      }
+    }
+    
+    console.log('getPopulationVotingBehavior - Final traces summary:', traces.map(t => `${t.name}: [${t.y.join(', ')}]`));
+    
+    return {
+      traces: traces,
+      periods: sortedPeriods.map(p => p.year.toString())
+    };
+  } catch (error) {
+    console.error('Error fetching population voting behavior:', error);
+    return { traces: [], periods: [] };
+  }
 }

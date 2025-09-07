@@ -29,6 +29,11 @@
 				icon="bar-chart-fill"
 				text="Election"
 			/>
+			<NavLink 
+				href="/statistics" 
+				icon="graph-up"
+				text="Statistics"
+			/>
 		</div>
 		
 		<!-- Version Info -->

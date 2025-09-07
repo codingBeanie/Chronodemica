@@ -320,8 +320,21 @@ def create_election_result(election_result: ElectionResult, db: Session = Depend
     return crud.create_item(db, election_result)
 
 @router.get("/election-result/", response_model=List[ElectionResult])
-def read_election_results(skip: int = 0, limit: int = 100, db: Session = Depends(get_session)):
-    return crud.get_items(db, ElectionResult, skip, limit)
+def read_election_results(
+    skip: int = 0, 
+    limit: int = 100, 
+    sort_by: Optional[str] = None,
+    sort_direction: Optional[str] = "asc",
+    period_id: Optional[int] = Query(None),
+    party_id: Optional[int] = Query(None),
+    db: Session = Depends(get_session)
+):
+    filters = {}
+    if period_id is not None:
+        filters["period_id"] = period_id
+    if party_id is not None:
+        filters["party_id"] = party_id
+    return crud.get_items(db, ElectionResult, skip, limit, filters, sort_by, sort_direction)
 
 @router.get("/election-result/{election_result_id}", response_model=ElectionResult)
 def read_election_result(election_result_id: int, db: Session = Depends(get_session)):
