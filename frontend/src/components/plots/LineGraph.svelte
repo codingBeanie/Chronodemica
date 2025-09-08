@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { getPartyResultsOverTime, getPopulationVotingBehavior, type LineGraphData } from '../../lib/api/data_services/plotting';
+  import { getPartyResultsOverTime, getPopulationVotingBehavior, getPopulationComposition, type LineGraphData } from '../../lib/api/data_services/plotting';
 
   interface ThemeColors {
     accent: string;
@@ -15,7 +15,7 @@
   interface Props {
     partyId?: number;
     popId?: number;
-    mode?: 'party' | 'population';
+    mode?: 'party' | 'population' | 'composition';
     aspectRatio?: number;
   }
 
@@ -26,9 +26,9 @@
     MARGIN: { t: 0, l: 50, r: 10, b: 60 } as const,
     FONT_SIZE: { tick: 18, default: 16, title: 18, annotation: 18 } as const,
     LINE_CONFIG: {
-      width: 3,
+      width: 5,
       mode: 'lines+markers',
-      marker: { size: 8 }
+      marker: { size: 16 }
     } as const
   } as const;
 
@@ -79,10 +79,23 @@
     error = null;
     
     try {
-      const data = await (mode === 'population' && popId !== undefined
-        ? getPopulationVotingBehavior(popId)
-        : getPartyResultsOverTime(partyId)
-      );
+      let data: LineGraphData;
+      
+      switch (mode) {
+        case 'population':
+          if (popId !== undefined) {
+            data = await getPopulationVotingBehavior(popId);
+          } else {
+            throw new Error('Population ID required for population mode');
+          }
+          break;
+        case 'composition':
+          data = await getPopulationComposition();
+          break;
+        default:
+          data = await getPartyResultsOverTime(partyId);
+          break;
+      }
       
       console.log(`LineGraph - Fetched ${mode} data:`, data);
       lineData = data;
@@ -115,12 +128,15 @@
       marker: {
         color: trace.color,
         size: PLOT_CONFIG.LINE_CONFIG.marker.size,
+        symbol: 'diamond',
         line: {
           color: colors.light,
           width: 1
         }
       },
-      hovertemplate: `<b>${trace.name}</b><br>%{x}: %{y:.1f}%<extra></extra>`
+      hovertemplate: mode === 'composition' 
+        ? `<b>${trace.name}</b><br>%{x}: %{y}<extra></extra>`
+        : `<b>${trace.name}</b><br>%{x}: %{y:.1f}%<extra></extra>`
     }));
   }
 
@@ -136,12 +152,12 @@
         type: 'category'
       },
       yaxis: {
-        title: mode === 'population' ? 'Voting Behavior (%)' : 'Election Results (%)',
+        title: mode === 'composition' ? 'Population Size' : (mode === 'population' ? 'Voting Behavior (%)' : 'Election Results (%)'),
         titlefont: { size: PLOT_CONFIG.FONT_SIZE.title, color: colors.darkAlt },
         tickfont: { size: PLOT_CONFIG.FONT_SIZE.tick, color: colors.darkAlt },
         rangemode: 'tozero',
         autorange: true,
-        ticksuffix: '%'
+        ticksuffix: mode === 'composition' ? '' : '%'
       },
       showlegend: data.traces.length > 1,
       legend: {
@@ -199,11 +215,25 @@
 
   // Helper functions for template
   function getLoadingMessage(): string {
-    return mode === 'population' ? 'Loading population voting data...' : 'Loading party results...';
+    switch (mode) {
+      case 'population':
+        return 'Loading population voting data...';
+      case 'composition':
+        return 'Loading population composition data...';
+      default:
+        return 'Loading party results...';
+    }
   }
 
   function getNoDataMessage(): string {
-    return mode === 'population' ? 'No population voting data available' : 'No party results data available';
+    switch (mode) {
+      case 'population':
+        return 'No population voting data available';
+      case 'composition':
+        return 'No population composition data available';
+      default:
+        return 'No party results data available';
+    }
   }
 
   // Handle resize and initial setup

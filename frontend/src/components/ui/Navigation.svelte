@@ -3,17 +3,17 @@
 	import Grid from './Grid.svelte';
 </script>
 
-<nav class="bg-dark text-light px-8 py-4">
+<nav class="px-8 py-4 bg-dark text-light">
 	<Grid cols="1fr 6fr 1fr" gap="gap-0">
 		<!-- Logo and Title -->
 		<div class="flex items-center border-r border-light-alt">
-			<a href="/" class="flex items-center hover:opacity-75 transition-opacity duration-200">
+			<a href="/" class="flex items-center transition-opacity duration-200 hover:opacity-75">
 				<h1 class="text-2xl font-semibold">Chronodemica</h1>
 			</a>
 		</div>
 		
 		<!-- Navigation Items -->
-		<div class="pl-4 gap-4 flex items-center justify-start border-r border-light">
+		<div class="flex items-center justify-start gap-4 pl-4 border-r border-light">
 			<NavLink 
 				href="/data_entry" 
 				icon="database"
@@ -38,7 +38,7 @@
 		
 		<!-- Version Info -->
 		<div class="flex items-center justify-between ml-4">
-			<p class="text-sm text-light-alt">
+			<p class="text-xs text-light-alt">
 				Made by CodingBeanie with 🤍
 			</p>
 			<p class="text-sm text-light-alt">

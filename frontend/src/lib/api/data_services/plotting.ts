@@ -397,3 +397,95 @@ export async function getPopulationVotingBehavior(popId: number): Promise<LineGr
     return { traces: [], periods: [] };
   }
 }
+
+// Generic colors for population composition visualization
+const POPULATION_COLORS = [
+  '#3182ce', // blue
+  '#38a169', // green  
+  '#e53e3e', // red
+  '#d69e2e', // yellow
+  '#8b5cf6', // purple
+  '#f56565', // light red
+  '#4fd1c7', // teal
+  '#f6ad55', // orange
+  '#9f7aea', // light purple
+  '#68d391', // light green
+  '#f687b3', // pink
+  '#4299e1', // light blue
+] as const;
+
+export async function getPopulationComposition(): Promise<LineGraphData> {
+  try {
+    console.log('getPopulationComposition - Starting fetch for all population sizes over time');
+    
+    // Fetch periods and populations
+    const [sortedPeriods, allPops] = await Promise.all([
+      fetchSortedPeriods(),
+      fetchPops()
+    ]);
+    
+    console.log('getPopulationComposition - Sorted periods:', sortedPeriods);
+    console.log('getPopulationComposition - Populations available:', allPops.map(p => `${p.name} (id: ${p.id})`));
+    
+    // Fetch population period data for all periods
+    const periodPopData: { [periodId: number]: any[] } = {};
+    
+    for (const period of sortedPeriods) {
+      console.log(`getPopulationComposition - Fetching pop data for period ${period.id} (${period.year})`);
+      const popResponse = await API.getAll('PopPeriod', 0, 100, undefined, undefined, { period_id: period.id });
+      
+      periodPopData[period.id] = popResponse.success && popResponse.data ? popResponse.data : [];
+      console.log(`getPopulationComposition - Period ${period.year}: ${periodPopData[period.id].length} pop period entries`);
+    }
+    
+    // Build traces for each population
+    const traces: LineGraphTrace[] = [];
+    
+    allPops.forEach((pop, index) => {
+      console.log(`getPopulationComposition - Processing population: ${pop.name} (id: ${pop.id})`);
+      
+      // Assign color from the palette, cycling through if more pops than colors
+      const colorIndex = index % POPULATION_COLORS.length;
+      const assignedColor = POPULATION_COLORS[colorIndex];
+      
+      const fakeParty: PartyInfo = {
+        id: pop.id,
+        name: pop.name,
+        color: assignedColor,
+        valid_from: undefined,
+        valid_until: undefined
+      };
+      
+      const trace = buildPartyTrace(fakeParty, sortedPeriods, (period, party) => {
+        const periodData = periodPopData[period.id] || [];
+        const popData = periodData.find((entry: any) => entry.pop_id === party.id);
+        return (popData && popData.pop_size !== undefined) ? (popData.pop_size || 0) : null;
+      });
+      
+      if (trace.x.length > 0) {
+        traces.push(trace);
+        console.log(`getPopulationComposition - Added trace for ${pop.name} with color ${assignedColor} and ${trace.x.length} data points:`, trace.y);
+      }
+    });
+    
+    console.log('getPopulationComposition - Final traces summary:', traces.map(t => `${t.name}: [${t.y.join(', ')}]`));
+    
+    return {
+      traces: traces,
+      periods: sortedPeriods.map(p => p.year.toString())
+    };
+  } catch (error) {
+    console.error('Error fetching population composition:', error);
+    return { traces: [], periods: [] };
+  }
+}
+
+// Helper function to fetch populations (similar to fetchParties)
+async function fetchPops(): Promise<Array<{ id: number; name: string; color?: string }>> {
+  const popsResponse = await API.getAll('Pop');
+  if (!popsResponse.success || !popsResponse.data) {
+    throw new Error('Failed to fetch populations');
+  }
+  
+  return popsResponse.data as Array<{ id: number; name: string; color?: string }>;
+}

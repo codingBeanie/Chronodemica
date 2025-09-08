@@ -79,11 +79,8 @@
 				<LineGraph />
 			</Container>
 		{:else if selectedStatistic === 'population_votes'}
-			<Container title="Population Voting Behavior">
+			<Container title="[{selectedPop && pops.find(p => p.id.toString() === selectedPop)?.name || ''}] Population Voting Behavior ">
 				{#if selectedPop && pops.find(p => p.id.toString() === selectedPop)}
-					<p class="text-light-alt mb-4">
-						Selected Population: {pops.find(p => p.id.toString() === selectedPop)?.name}
-					</p>
 					<LineGraph mode="population" popId={parseInt(selectedPop)} />
 				{:else}
 					<p class="text-light-alt">Please select a population to view voting behavior.</p>
@@ -91,7 +88,7 @@
 			</Container>
 		{:else if selectedStatistic === 'population_composition'}
 			<Container title="Population Composition">
-				<p class="text-light-alt">Population composition visualization will be added here.</p>
+				<LineGraph mode="composition" />
 			</Container>
 		{/if}
 	</div>
