@@ -177,7 +177,7 @@
             
             <!-- Proportional Bar Chart -->
             <div class="flex w-full h-16 overflow-hidden border rounded border-light-alt">
-              {#each coalition.parties as party (party.party_id)}
+              {#each [...coalition.parties].sort((a, b) => (b.seats || 0) - (a.seats || 0)) as party (party.party_id)}
                 <div 
                   class="relative flex flex-col items-center justify-center px-2 text-lg font-medium transition-all cursor-pointer hover:brightness-110 min-w-12"
                   style="flex: {party.seats}; background-color: {party.color || DEFAULT_PARTY_COLOR}"
