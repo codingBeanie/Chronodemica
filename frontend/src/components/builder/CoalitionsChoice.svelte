@@ -140,67 +140,61 @@
     
   {:else if error}
     <!-- Error State -->
-    <div class="text-failure p-4 bg-light border border-failure rounded-md">
+    <div class="p-4 border rounded-md text-failure bg-light border-failure">
       Error: {error}
     </div>
     
   {:else if coalitions.length === 0}
     <!-- Empty State -->
-    <div class="text-dark p-4 bg-light-alt border border-light-alt rounded-md">
+    <div class="p-4 border rounded-md text-dark bg-light-alt border-light-alt">
       {MESSAGES.NO_DATA}
     </div>
     
   {:else}
     <!-- Coalitions List -->
-    <div class="w-full h-full overflow-y-auto space-y-6">
+    <div class="w-full h-full space-y-6 overflow-y-auto">
       {#each coalitions as coalition (coalition.coalition_id)}
         {@const buttonConfig = getButtonConfig(coalition)}
         
         <!-- Coalition Card -->
-        <div class="p-4 bg-light border border-light-alt rounded-md transition-shadow duration-200 hover:shadow-lg">
+        <div class="p-4 border border-light-alt rounded-md transition-shadow duration-200 hover:shadow-lg {isCoalitionInGovernment(coalition) ? 'bg-light-alt bg-opacity-20' : 'bg-light'}">
           
           <!-- Coalition Header -->
           <header class="mb-4">
-            <h3 class="text-lg font-bold text-dark mb-1">
+            <h3 class="mb-1 text-lg font-bold text-dark">
               {coalition.coalition_name}
             </h3>
-            <div class="text-base font-medium text-dark-alt mb-3">
+            <div class="mb-3 text-base font-medium text-dark-alt">
               {coalition.total_seats} seats • {coalition.total_percentage.toFixed(1)}% • +{coalition.majority_margin} majority
             </div>
           </header>
           
           <!-- Coalition Content -->
           <section class="space-y-3">
-            <h4 class="text-base font-semibold text-dark border-b border-light-alt pb-1">
+            <h4 class="pb-1 text-base font-semibold border-b text-dark border-light-alt">
               Coalition Members
             </h4>
             
             <!-- Proportional Bar Chart -->
-            <div class="flex w-full h-16 rounded overflow-hidden border border-light-alt">
+            <div class="flex w-full h-16 overflow-hidden border rounded border-light-alt">
               {#each coalition.parties as party (party.party_id)}
                 <div 
-                  class="flex flex-col items-center justify-center text-light text-lg font-medium relative hover:brightness-110 transition-all cursor-pointer min-w-8 px-1"
+                  class="relative flex flex-col items-center justify-center px-2 text-lg font-medium transition-all cursor-pointer hover:brightness-110 min-w-12"
                   style="flex: {party.seats}; background-color: {party.color || DEFAULT_PARTY_COLOR}"
                   title={getPartyTooltip(party)}
                 >
-                  <!-- Party Name Row -->
-                  <div class="flex items-center gap-1 mb-1">
+                  <div class="px-2 py-1 font-semibold text-center truncate rounded bg-light text-dark">
                     {#if party.in_government}
-                      <i class="bi bi-bank2 text-light" aria-label="In Government"></i>
+                      <i class="mr-1 bi bi-bank2 text-dark" aria-label="In Government"></i>
                     {/if}
-                    <span class="truncate text-center font-semibold">{party.name}</span>
-                  </div>
-                  
-                  <!-- Party Stats Row -->
-                  <div class="text-sm opacity-90">
-                    {party.seats} seats • {party.percentage.toFixed(1)}%
+                    {party.name} ({party.seats})
                   </div>
                 </div>
               {/each}
             </div>
             
             <!-- Government Action -->
-            <footer class="mt-4 pt-3 border-t border-light-alt">
+            <footer class="pt-3 mt-4 border-t border-light-alt">
               <Button 
                 text={buttonConfig.text}
                 theme={buttonConfig.theme}

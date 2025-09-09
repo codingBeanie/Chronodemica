@@ -3,6 +3,7 @@
 	import Container from '../../components/ui/Container.svelte';
 	import SegmentedControl from '../../components/ui/SegmentedControl.svelte';
 	import LineGraph from '../../components/plots/LineGraph.svelte';
+	import GovernmentList from '../../components/builder/GovernmentList.svelte';
 	import { API } from '../../lib/api/core';
 	import { onMount } from 'svelte';
 
@@ -16,7 +17,8 @@
 	const statisticOptions = {
 		'Party Results': 'party_results',
 		'Population Votes': 'population_votes',
-		'Population Composition': 'population_composition'
+		'Population Composition': 'population_composition',
+		'Governments': 'governments'
 	};
 
 	// State
@@ -89,6 +91,10 @@
 		{:else if selectedStatistic === 'population_composition'}
 			<Container title="Population Composition">
 				<LineGraph mode="composition" />
+			</Container>
+		{:else if selectedStatistic === 'governments'}
+			<Container title="Government Composition">
+				<GovernmentList />
 			</Container>
 		{/if}
 	</div>
