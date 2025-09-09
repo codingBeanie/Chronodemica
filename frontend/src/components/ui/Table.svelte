@@ -40,6 +40,7 @@
   const TABLE_CONFIG = {
     SPECIAL_COLUMNS: {
       PERCENTAGE_CHANGE: '% change',
+      PERCENTAGE: 'percentage',
       COLOR: 'color'
     },
     SPECIAL_PARTY_FIELDS: {
@@ -105,13 +106,13 @@
 
   // Utility functions
   function getAlignment(value: any, header: string): string {
-    return typeof value === 'number' || header === TABLE_CONFIG.SPECIAL_COLUMNS.PERCENTAGE_CHANGE 
+    return typeof value === 'number' || header === TABLE_CONFIG.SPECIAL_COLUMNS.PERCENTAGE_CHANGE || header === TABLE_CONFIG.SPECIAL_COLUMNS.PERCENTAGE
       ? 'text-right' 
       : 'text-left';
   }
   
   function getHeaderAlignment(header: string): string {
-    return (hasData && typeof data[0][header] === 'number') || header === TABLE_CONFIG.SPECIAL_COLUMNS.PERCENTAGE_CHANGE 
+    return (hasData && typeof data[0][header] === 'number') || header === TABLE_CONFIG.SPECIAL_COLUMNS.PERCENTAGE_CHANGE || header === TABLE_CONFIG.SPECIAL_COLUMNS.PERCENTAGE
       ? 'text-right' 
       : 'text-left';
   }

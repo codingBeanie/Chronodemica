@@ -24,6 +24,7 @@
 	let loading = $state(false);
 	let loadingResults = $state(false);
 	let error = $state<string | null>(null);
+	let coalitionsTrigger = $state(0);
 
 	// Helper functions for seat memory
 	function getInitialSeats(): number {
@@ -155,6 +156,9 @@
 			// Get updated election results
 			await loadExistingResults(periodId);
 			
+			// Trigger coalitions update
+			coalitionsTrigger++;
+			
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An unexpected error occurred';
 		} finally {
@@ -268,6 +272,7 @@
 	<Container title="Government Formation">
 		<CoalitionsChoice 
 			periodId={selectedPeriod ? parseInt(selectedPeriod) : null}
+			trigger={coalitionsTrigger}
 			onGovernmentChange={() => selectedPeriod && loadExistingResults(parseInt(selectedPeriod))}
 		/>
 	</Container>

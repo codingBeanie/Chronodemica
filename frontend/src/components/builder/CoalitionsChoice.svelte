@@ -5,10 +5,11 @@
   // Props interface
   interface Props {
     periodId: number | null;
+    trigger?: number;
     onGovernmentChange?: () => void;
   }
 
-  let { periodId, onGovernmentChange }: Props = $props();
+  let { periodId, trigger = 0, onGovernmentChange }: Props = $props();
 
   // Component state
   let coalitions = $state<Coalition[]>([]);
@@ -28,9 +29,11 @@
     GOVERNMENT_CANCEL_GENERIC_ERROR: 'An error occurred cancelling government'
   } as const;
 
-  // Load coalitions when periodId changes
+  // Load coalitions when periodId or trigger changes
   $effect(() => {
     if (periodId) {
+      // Include trigger in dependency to force reload
+      void trigger;
       loadCoalitions();
     }
   });

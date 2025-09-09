@@ -65,14 +65,14 @@
 	let enhancedVotingBehavior = $derived(
 		previousVotingBehavior.length > 0 && votingBehavior.length > 0
 			? calculatePercentageChanges(votingBehavior, previousVotingBehavior)
-			: votingBehavior.map(vb => ({ ...vb, '% change': 'N/A' }))
+			: votingBehavior.map(vb => ({ ...vb, percentage: vb.percentage.toFixed(1) + '%', '% change': 'N/A' }))
 	);
 
 	// Derived values for enhanced pop size ratios with % change
 	let enhancedPopSizeRatios = $derived(
 		previousPopSizeRatios.length > 0 && popSizeRatios.length > 0
 			? calculatePopSizeRatioChanges(popSizeRatios, previousPopSizeRatios)
-			: popSizeRatios.map(psr => ({ ...psr, '% change': 'N/A' }))
+			: popSizeRatios.map(psr => ({ ...psr, percentage: psr.percentage.toFixed(1) + '%', '% change': 'N/A' }))
 	);
 
 	// Utility functions
@@ -96,6 +96,7 @@
 
 			return {
 				...curr,
+				percentage: curr.percentage.toFixed(1) + '%',
 				'% change': percentageChange !== null 
 					? `${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(1)}%`
 					: 'N/A'
@@ -132,6 +133,7 @@
 
 			return {
 				...curr,
+				percentage: currentRatio.toFixed(1) + '%',
 				'% change': percentageChange !== null 
 					? `${percentageChange >= 0 ? '+' : ''}${percentageChange.toFixed(1)}%`
 					: 'N/A'
