@@ -7,6 +7,8 @@ export interface FieldMeta {
   type: 'input' | 'slider';
   showRatio?: boolean;
   defaultValue?: number;
+  minLabel?: string;
+  maxLabel?: string;
 }
 
 export interface PopPeriodFieldMeta {
@@ -44,15 +46,19 @@ export const POP_PERIOD_FIELD_META: PopPeriodFieldMeta = {
     min: -100,
     max: 100,
     step: 1,
-    hint: "Social orientation from conservative (-100) to progressive (100)",
-    type: "slider"
+    hint: "Social orientation from libertarian (-100) to authoritarian (100)",
+    type: "slider",
+    minLabel: "libertarian",
+    maxLabel: "authoritarian"
   },
   economic_orientation: {
     min: -100,
     max: 100,
     step: 1,
-    hint: "Economic orientation from left-wing (-100) to right-wing (100)",
-    type: "slider"
+    hint: "Economic orientation from collectivist (-100) to individualist (100)",
+    type: "slider",
+    minLabel: "collectivist",
+    maxLabel: "individualist"
   },
   max_political_distance: {
     min: 0,
@@ -96,15 +102,19 @@ export const PARTY_PERIOD_FIELD_META: PartyPeriodFieldMeta = {
     min: -100,
     max: 100,
     step: 1,
-    hint: "Party's stance on social issues from conservative (-100) to progressive (100)",
-    type: "slider"
+    hint: "Party's stance on social issues from libertarian (-100) to authoritarian (100)",
+    type: "slider",
+    minLabel: "libertarian",
+    maxLabel: "authoritarian"
   },
   economic_orientation: {
     min: -100,
     max: 100,
     step: 1,
-    hint: "Party's economic policy from left-wing (-100) to right-wing (100)",
-    type: "slider"
+    hint: "Party's economic policy from collectivist (-100) to individualist (100)",
+    type: "slider",
+    minLabel: "collectivist",
+    maxLabel: "individualist"
   },
   political_strength: {
     min: 0,

@@ -8,9 +8,11 @@
 		step?: number;
 		hint?: string;
 		caption?: string;
+		minLabel?: string;
+		maxLabel?: string;
 	}
 
-	let { id, title, value = $bindable(), min, max, step = 1, hint, caption = '' }: Props = $props();
+	let { id, title, value = $bindable(), min, max, step = 1, hint, caption = '', minLabel, maxLabel }: Props = $props();
 
 	function formatNumber(num: number): string {
 		return num.toLocaleString();
@@ -52,9 +54,9 @@
 	/>
 	<!-- SLIDER RANGE LABELS: Min/max value indicators -->
 	<div class="flex justify-between font-mono">
-		<span class="text-xs">{formatNumber(min)}</span>
+		<span class="text-xs">{minLabel || formatNumber(min)}</span>
 		<!-- SLIDER VALUE DISPLAY: Current value with monospace font -->
 		<span class="p-2 bg-light-alt rounded-md">{formatNumber(value)}</span>
-		<span class="text-xs">{formatNumber(max)}</span>
+		<span class="text-xs">{maxLabel || formatNumber(max)}</span>
 	</div>
 </div>

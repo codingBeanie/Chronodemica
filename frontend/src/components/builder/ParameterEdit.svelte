@@ -179,7 +179,9 @@
 					min: field.meta.min,
 					max: field.meta.max,
 					step: field.meta.step || 1,
-					caption: getCombinedCaption(field.key)
+					caption: getCombinedCaption(field.key),
+					minLabel: field.meta.minLabel,
+					maxLabel: field.meta.maxLabel
 				}
 			};
 		}
