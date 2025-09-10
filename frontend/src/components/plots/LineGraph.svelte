@@ -120,7 +120,7 @@
       y: trace.y,
       type: 'scatter',
       mode: PLOT_CONFIG.LINE_CONFIG.mode,
-      name: trace.name,
+      name: trace.name, // Short name for legend
       line: {
         color: trace.color,
         width: PLOT_CONFIG.LINE_CONFIG.width
@@ -135,8 +135,8 @@
         }
       },
       hovertemplate: mode === 'composition' 
-        ? `<b>${trace.name}</b><br>%{x}: %{y}<extra></extra>`
-        : `<b>${trace.name}</b><br>%{x}: %{y:.1f}%<extra></extra>`
+        ? `<b>${trace.full_name}</b><br>%{x}: %{y}<extra></extra>`
+        : `<b>${trace.full_name}</b><br>%{x}: %{y:.1f}%<extra></extra>`
     }));
   }
 

@@ -32,6 +32,7 @@ export interface ElectionBarData {
   y: number[];
   text: string[];
   colors: string[];
+  fullNames: string[];
   voterTurnout: number;
 }
 
@@ -172,12 +173,14 @@ export function processElectionResults(results: EnrichedElectionResult[]): Elect
     y: finalResults.map(r => r.percentage || 0),
     text: finalResults.map(r => `${(r.percentage || 0).toFixed(1)}%`), // Only show percentage
     colors: finalResults.map(r => r.party_color || "#525252"), // Use actual party colors
+    fullNames: finalResults.map(r => r.party_full_name),
     voterTurnout: voterTurnout
   };
 }
 
 export interface LineGraphTrace {
   name: string;
+  full_name: string;
   x: string[];
   y: (number | null)[];
   color: string;
@@ -197,6 +200,7 @@ interface Period {
 interface PartyInfo {
   id: number;
   name: string;
+  full_name?: string;
   color?: string;
   valid_from?: number;
   valid_until?: number;
@@ -242,6 +246,7 @@ function createPartyMap(parties: PartyInfo[]): Map<string, PartyInfo> {
 function buildPartyTrace(party: PartyInfo, periods: Period[], getData: (period: Period, party: PartyInfo) => number | null): LineGraphTrace {
   const trace: LineGraphTrace = {
     name: party.name,
+    full_name: party.full_name || party.name,
     x: [],
     y: [],
     color: party.color || '#525252',
@@ -369,6 +374,7 @@ export async function getPopulationVotingBehavior(popId: number): Promise<LineGr
       const fakeParty: PartyInfo = {
         id: partyInfo?.id || 0,
         name: partyName,
+        full_name: partyInfo?.full_name || partyName,
         color: partyInfo?.color,
         valid_from: partyInfo?.valid_from,
         valid_until: partyInfo?.valid_until
@@ -451,6 +457,7 @@ export async function getPopulationComposition(): Promise<LineGraphData> {
       const fakeParty: PartyInfo = {
         id: pop.id,
         name: pop.name,
+        full_name: pop.name, // For populations, name and full_name are the same
         color: assignedColor,
         valid_from: undefined,
         valid_until: undefined

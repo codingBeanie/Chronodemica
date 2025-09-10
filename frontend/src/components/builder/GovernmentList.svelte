@@ -2,10 +2,12 @@
 	import { onMount } from 'svelte';
 	import { API, type Period, type ElectionResult, type Party } from '../../lib/api/core';
 	import Grid from '../ui/Grid.svelte';
+	import Tooltip from '../ui/Tooltip.svelte';
 
 	// Types
 	interface EnrichedElectionResult extends ElectionResult {
 		party_name: string;
+		party_full_name: string;
 		party_color: string;
 	}
 
@@ -18,6 +20,12 @@
 	let data = $state<PeriodData[]>([]);
 	let loading = $state(false);
 	let error = $state('');
+	
+	// Tooltip state
+	let tooltipVisible = $state(false);
+	let tooltipContent = $state('');
+	let tooltipX = $state(0);
+	let tooltipY = $state(0);
 
 	// Constants
 	const DEFAULT_PARTY_COLOR = '#525252';
@@ -57,6 +65,7 @@
 			return {
 				...result,
 				party_name: party?.name || `Party ${result.party_id}`,
+				party_full_name: party?.full_name || party?.name || `Party ${result.party_id}`,
 				party_color: party?.color || DEFAULT_PARTY_COLOR
 			};
 		});
@@ -75,9 +84,28 @@
 	}
 
 	function getPartyTooltip(party: EnrichedElectionResult): string {
-		const baseInfo = `${party.party_name}: ${party.seats} seats (${party.percentage?.toFixed(1)}%)`;
+		const baseInfo = `${party.party_full_name}: ${party.seats} seats (${party.percentage?.toFixed(1)}%)`;
 		const govInfo = party.head_of_government ? ' • Head of Government' : '';
 		return baseInfo + govInfo;
+	}
+
+	// Tooltip event handlers
+	function showTooltip(event: MouseEvent, party: EnrichedElectionResult) {
+		tooltipContent = getPartyTooltip(party);
+		tooltipX = event.clientX;
+		tooltipY = event.clientY;
+		tooltipVisible = true;
+	}
+
+	function hideTooltip() {
+		tooltipVisible = false;
+	}
+
+	function updateTooltip(event: MouseEvent) {
+		if (tooltipVisible) {
+			tooltipX = event.clientX;
+			tooltipY = event.clientY;
+		}
 	}
 
 	// Main data fetching function
@@ -158,7 +186,9 @@
 									<div 
 										class="relative flex flex-col items-center justify-center px-2 font-medium transition-all cursor-pointer text-md hover:brightness-110 min-w-12"
 										style="flex: {party.seats || 1}; background-color: {party.party_color}"
-										title={getPartyTooltip(party)}
+										onmouseenter={(e) => showTooltip(e, party)}
+										onmouseleave={hideTooltip}
+										onmousemove={updateTooltip}
 									>
 										<div class="px-2 py-1 font-semibold text-center truncate rounded text-md bg-light text-dark">
 											{party.party_name} ({party.seats})
@@ -183,7 +213,9 @@
 									<div 
 										class="relative flex flex-col items-center justify-center px-2 text-sm font-medium transition-all cursor-pointer hover:brightness-110 min-w-12"
 										style="flex: {party.seats || 1}; background-color: {party.party_color}"
-										title={getPartyTooltip(party)}
+										onmouseenter={(e) => showTooltip(e, party)}
+										onmouseleave={hideTooltip}
+										onmousemove={updateTooltip}
 									>
 										<div class="px-2 py-1 font-semibold text-center truncate rounded text-md bg-light text-dark">
 											{party.party_name} ({party.seats})
@@ -201,3 +233,11 @@
 		{/each}
 	</div>
 {/if}
+
+<!-- Custom Tooltip -->
+<Tooltip 
+	content={tooltipContent}
+	visible={tooltipVisible}
+	x={tooltipX}
+	y={tooltipY}
+/>

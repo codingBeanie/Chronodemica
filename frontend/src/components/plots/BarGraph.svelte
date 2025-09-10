@@ -106,7 +106,11 @@
       x: data.x,
       y: data.y,
       type: 'bar',
-      hovertemplate: '%{x}: %{y:.1f}%<extra></extra>',
+      text: data.fullNames.map((fullName, index) => 
+        `${fullName}: ${data.y[index]?.toFixed(1)}%`
+      ),
+      textposition: 'none',
+      hovertemplate: '%{text}<extra></extra>',
       marker: {
         color: data.colors,
         opacity: PLOT_CONFIG.BAR_CONFIG.opacity,
